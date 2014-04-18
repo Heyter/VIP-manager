@@ -6,11 +6,11 @@
 
 public Plugin:info =
 {
-	name = "VIP-Manager";
-	author = Author;
-	description = "VIP-Manager for CTaF-Server";
-	version = Version;
-	url = "http://cf-server.pfweb.eu";
+	name = "VIP-Manager",
+	author = Author,
+	description = "VIP-Manager for CTaF-Server",
+	version = Version,
+	url = "http://cf-server.pfweb.eu"
 };
 
 // CVars
@@ -35,7 +35,7 @@ public onPluginStart()
 	AutoExecConfig(true, "VIP-Manager");
 	
 	// Init Timer
-	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarInt(VIP_Check_Time * 60, Timer_CheckVips, INVALID_HANDLE, TIMER_REPEAT);
+	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, Timer_CheckVips, INVALID_HANDLE, TIMER_REPEAT);
 }
 
 // Checking for outdated VIPs
@@ -78,7 +78,7 @@ public Action:Timer_CheckVips(Handle:timer)
 			if(SQL_GetRowCount(hQuery) == 0) return;
 			
 			// Delete all oudated VIPs
-			if(!SQL_FastQuery("DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
+			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
 			{
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
