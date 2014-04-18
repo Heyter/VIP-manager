@@ -51,12 +51,62 @@ public Action:Timer_CheckVips(Handle:timer)
 		// Log error
 		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		
+		return;
 	}
 	else
 	{
-		// TO-Do
-		// - Get oudated VIPs and log them
-		// - Remove oudated VIPs from server
+		new String:query[255];
+		new Handle:hQuery;
+		
+		// Check for oudated VIPs
+		Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0");
+		hQuery = SQL_Query(connection, query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			
+			return;
+		}
+		else
+		{
+			// Return if none VIP is oudated
+			if(SQL_GetRowCount(hQuery) == 0) return;
+			
+			// Delete all oudated VIPs
+			if(!SQL_FastQuery("DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
+			{
+				// Log error
+				SQL_GetError(connection, error, sizeof(error));
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+			
+				return;
+			}
+			else
+			{
+				// Log all oudated VIPs
+				if(GetConVarBool(VIP_Log))
+				{
+					new String:name[255];
+					new String:steamid[128];
+					
+					while(SQL_FetchRow(hQuery))
+					{
+						SQL_FetchString(hQuery, 0, name, sizeof(name));
+						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
+						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted.", name, steamid);
+					}
+				}
+			}
+			
+			// Close Query
+			CloseHandle(hQuery);
+		}
 		
 		// Close connection
 		CloseHandle(connection);
