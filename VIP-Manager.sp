@@ -34,6 +34,12 @@ public onPluginStart()
 	// Use config file
 	AutoExecConfig(true, "VIP-Manager");
 	
+	// Register all commands
+	RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
+	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
+	RegAdminCmd("vipm_check", VIP_Check, ADMFLAG_ROOT, "Checks for oudated VIPs");
+	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
+	
 	// Init Timer
 	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, Timer_CheckVips, INVALID_HANDLE, TIMER_REPEAT);
 }
@@ -110,5 +116,52 @@ public Action:Timer_CheckVips(Handle:timer)
 		
 		// Close connection
 		CloseHandle(connection);
+	}
+}
+
+public Action:VIP_Manager_Menu(client, args)
+{
+	// Build menu
+	new Handle:menu = CreateMenu(MenuHandler, MENU_ACTIONS_ALL);
+	SetMenuTitle(menu, "VIP-Manager Main Menu");
+	AddMenuItem(menu, "#addvip", "Add VIP");
+	AddMenuItem(menu, "#rmvip", "Remove VIP");
+	AddMenuItem(menu, "#addtime", "Add Time to VIP");
+	SetMenuExitButton(menu, true);
+	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+}
+
+public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
+{
+	switch(action)
+	{
+		case MENU_ACTION_SELECT:
+		{
+			// Get selected Item
+			decl String:info;
+			GetMenuItem(menu, param2, info, sizeof(info));
+			
+			if(StrEqual(info, "#addvip"))
+			{
+				new Handle:menu = CreateMenu(MenuHandler, MENU_ACTIONS_ALL);
+				SetMenuTitle(menu, "VIP-Manager Main Menu");
+				AddMenuItem(menu, "#addvip", "Add VIP");
+				AddMenuItem(menu, "#rmvip", "Remove VIP");
+				AddMenuItem(menu, "#addtime", "Add Time to VIP");
+				SetMenuExitButton(menu, true);
+				DisplayMenu(menu, client, MENU_TIME_FOREVER);
+			}
+			else if(StrEqual(info, "#rmvip"))
+			{
+			}
+			else if(StrEqual(info, "#addtime"))
+			{
+			}
+		}
+		
+		case MENU_ACTION_END:
+		{
+			CloseHandle(menu);
+		}
 	}
 }
