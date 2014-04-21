@@ -48,7 +48,7 @@ public onPluginStart()
 public Action:VIP_Check(Handle:timer)
 {
 	// Create SQL connection
-	new String:error[255];
+	decl String:error[255];
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
 	
 	// Check for connection error
@@ -62,7 +62,7 @@ public Action:VIP_Check(Handle:timer)
 	}
 	else
 	{
-		new String:query[255];
+		decl String:query[255];
 		new Handle:hQuery;
 		
 		// Check for oudated VIPs
@@ -98,8 +98,8 @@ public Action:VIP_Check(Handle:timer)
 				// Log all oudated VIPs
 				if(GetConVarBool(VIP_Log))
 				{
-					new String:name[255];
-					new String:steamid[128];
+					decl String:name[255];
+					decl String:steamid[128];
 					
 					while(SQL_FetchRow(hQuery))
 					{
