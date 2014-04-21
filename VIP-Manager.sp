@@ -41,11 +41,11 @@ public onPluginStart()
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
 	
 	// Init Timer
-	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, Timer_CheckVips, INVALID_HANDLE, TIMER_REPEAT);
+	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check, INVALID_HANDLE, TIMER_REPEAT);
 }
 
 // Checking for outdated VIPs
-public Action:Timer_CheckVips(Handle:timer)
+public Action:VIP_Check(Handle:timer)
 {
 	// Create SQL connection
 	new String:error[255];
