@@ -37,15 +37,20 @@ public onPluginStart()
 	// Register all commands
 	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
-	RegAdminCmd("vipm_check", VIP_Check, ADMFLAG_ROOT, "Checks for oudated VIPs");
+	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
 	
 	// Init Timer
-	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check, INVALID_HANDLE, TIMER_REPEAT);
+	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+}
+
+public Action:VIP_Check_Cmd(client, args)
+{
+	VIP_Check_Timer(INVALID_HANDLE);
 }
 
 // Checking for outdated VIPs
-public Action:VIP_Check(Handle:timer)
+public Action:VIP_Check_Timer(Handle:timer)
 {
 	// Create SQL connection
 	decl String:error[255];
@@ -198,6 +203,106 @@ public Action:VIP_Add(client, args)
 	}
 	
 	// Close connection
+	CloseHandle(connection);
+}
+
+public Action:VIP_Remove(client, args)
+{
+	// Check arguments count
+	if(args < 1)
+	{
+		PrintToChat(client, "[VIP-Manager] Use vipm_rm <name>");
+		return;
+	}
+	
+	// Get Name
+	decl String:Name[255];
+	GetCmdArg(1, Name, sizeof(Name));
+	
+	// Create connection to sql server
+	decl String:error[255];
+	new Handle:connection = SQL_DefConnect(error, sizeof(error));
+	
+	if(connection == INVALID_HANDLE)
+	{
+		// Log error
+		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		
+		return;
+	}
+	else
+	{
+		new Handle:hQuery;
+		decl String:Query[255];
+		
+		// Set SQL query
+		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '\%%s\%'");
+		hQuery = SQL_Query(connection, Query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+			
+			return;
+		}
+		else
+		{
+			// Check count of founded VIPs
+			if(SQL_GetRowCount(hQuery) > 1)
+			{
+				// Log error
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Found more than one VIP by searching for %s!", Name);
+				PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
+				
+				return;
+			}
+			
+			// Get SteamID
+			decl String:SteamID[64];
+			if(SQL_FetchRow(hQuery))
+			{
+				SQL_FetchString(hQuery, 1, SteamID, sizeof(SteamID));
+				SQL_FetchString(hQuery, 2, Name, sizeof(Name));
+			}
+			else
+			{
+				// Log error
+				SQL_GetError(connection, error, sizeof(error));
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+				PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+				
+				return;
+			}
+			
+			// Delete VIP
+			Format(Query, sizeof(Query), "DELETE FROM sm_admins WHERE identity = %s", SteamID);
+			
+			if(!SQL_FastQuery(connection, Query))
+			{
+				// Log error
+				SQL_GetError(connection, error, sizeof(error));
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+			
+				return;
+			}
+			else
+			{
+				// Log deleted VIP
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP %s (SteamID: %s)", Name, SteamID);
+				PrintToChat(client, "[VIP-Manager] Deleted VIP %s (SteamID: %s)", Name, SteamID);
+			}
+		}
+		
+		// Close Query
+		CloseHandle(hQuery);
+	}
+	
+	//Close connection
 	CloseHandle(connection);
 }
 
