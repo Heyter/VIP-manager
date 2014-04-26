@@ -35,13 +35,23 @@ public onPluginStart()
 	AutoExecConfig(true, "VIP-Manager");
 	
 	// Register all commands
+	RegAdminCmd("vipm_help", VIP_Help, ADMFLAG_ROOT, "Show a list of commands");
 	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
-	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
+	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	
 	// Init Timer
 	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+}
+
+public Action:VIP_Help(client, args)
+{
+	// Print all commands with syntax
+	PrintToChat(client, "vipm_help 								| Show this text.");
+	PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"]	| Adds a new VIP for give days.");
+	PrintToChat(client, "vipm_rm <name>							| Remove a VIP.");
+	PrintToChat(client, "vipm_check								| Checks for outdated VIPs.");
 }
 
 public Action:VIP_Check_Cmd(client, args)
