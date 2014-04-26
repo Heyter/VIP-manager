@@ -119,6 +119,88 @@ public Action:VIP_Check(Handle:timer)
 	}
 }
 
+public Action:VIP_Add(client, args)
+{
+	// Check arguments count
+	if(args < 2)
+	{
+		PrintToChat(client, "[VIP-Manager] Use vipm_add <days> <name> [\"SteamID\"]");
+		return;
+	}
+	
+	// Get days count, name and SteamID
+	decl String:SteamID[64];
+	decl String:Name[255];
+	decl String:days[16];
+	
+	GetCmdArg(1, days, sizeof(days));
+	GetCmdArg(2, Name, sizeof(Name));
+	if(args == 3) GetCmdArg(3, SteamID, sizeof(SteamID));
+	else
+	{
+		// Search client by name
+		for(new i = 1; i <= MaxClients; i++)
+		{
+			if(!IsClientConnected(i)) continue;
+			
+			// Get client name
+			decl String:cName[255];
+			GetClientName(i, cName, sizeof(cName));
+			
+			if(StrEqual(Name, cName))
+			{
+				// Get SteamID
+				GetClientAuthString(i, SteamID, sizeof(SteamID));
+				break;
+			}
+		}
+	}
+	
+	// Create connection to sql server
+	decl String:error[255];
+	new Handle:connection = SQL_DefConnect(error, sizeof(error));
+	
+	if(connection == INVALID_HANDLE)
+	{
+		// Log error
+		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		
+		return;
+	}
+	else
+	{
+		new Handle:hQuery;
+		decl String:Query[255];
+		
+		// Set SQL query
+		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', %s, 'a', %s, %i)", SteamID, Name, days);
+		hQuery = SQL_Query(connection, Query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+			
+			return;
+		}
+		else
+		{
+			// Log new VIP
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Added VIP %s (SteamID: %s) for %i days", Name, SteamID, days);
+			PrintToChat(client, "[VIP-Manager] Added VIP %s (SteamID: %s) for %i days", Name, SteamID, days);
+		}
+		
+		// Close Query
+		CloseHandle(hQuery);
+	}
+	
+	// Close connection
+	CloseHandle(connection);
+}
+
 public Action:VIP_Manager_Menu(client, args)
 {
 	// Build menu
