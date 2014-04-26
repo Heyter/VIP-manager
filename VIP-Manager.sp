@@ -35,7 +35,7 @@ public onPluginStart()
 	AutoExecConfig(true, "VIP-Manager");
 	
 	// Register all commands
-	RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
+	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
 	RegAdminCmd("vipm_check", VIP_Check, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
@@ -201,6 +201,7 @@ public Action:VIP_Add(client, args)
 	CloseHandle(connection);
 }
 
+/*
 public Action:VIP_Manager_Menu(client, args)
 {
 	// Build menu
@@ -247,3 +248,4 @@ public MenuHandler(Handle:menu, MenuAction:action, param1, param2)
 		}
 	}
 }
+*/
