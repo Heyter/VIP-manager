@@ -283,7 +283,6 @@ public Action:VIP_Remove(client, args)
 		
 		// Set SQL query
 		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s'", Name);
-		PrintToServer(Query);
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
@@ -313,8 +312,8 @@ public Action:VIP_Remove(client, args)
 			decl String:SteamID[64];
 			if(SQL_FetchRow(hQuery))
 			{
-				SQL_FetchString(hQuery, 1, SteamID, sizeof(SteamID));
-				//SQL_FetchString(hQuery, 2, Name, sizeof(Name));
+				SQL_FetchString(hQuery, 0, SteamID, sizeof(SteamID));
+				SQL_FetchString(hQuery, 1, Name, sizeof(Name));
 			}
 			else
 			{
