@@ -314,7 +314,7 @@ public Action:VIP_Remove(client, args)
 			if(SQL_FetchRow(hQuery))
 			{
 				SQL_FetchString(hQuery, 1, SteamID, sizeof(SteamID));
-				SQL_FetchString(hQuery, 2, Name, sizeof(Name));
+				//SQL_FetchString(hQuery, 2, Name, sizeof(Name));
 			}
 			else
 			{
@@ -328,7 +328,7 @@ public Action:VIP_Remove(client, args)
 			}
 			
 			// Delete VIP
-			Format(Query, sizeof(Query), "DELETE FROM sm_admins WHERE identity = %s", SteamID);
+			Format(Query, sizeof(Query), "DELETE FROM sm_admins WHERE identity = '%s'", SteamID);
 			
 			if(!SQL_FastQuery(connection, Query))
 			{
