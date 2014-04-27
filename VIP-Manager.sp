@@ -23,7 +23,7 @@ public Handle:VIP_Log = INVALID_HANDLE;
 new Handle:CheckTimer = INVALID_HANDLE;
 
 // Plugin start
-public onPluginStart()
+public OnPluginStart()
 {
 	// Init CVars
 	VIP_Check_Activated = CreateConVar("vipm_check_activated", "true", "Activating checking for outdated VIPs");
