@@ -174,6 +174,12 @@ public Action:VIP_Add(client, args)
 				GetClientAuthString(i, SteamID, sizeof(SteamID));
 				break;
 			}
+			else if(i == MaxClients)
+			{
+				PrintToChat(client, "[VIP-Manager] Can't find player %s", Name);
+				
+				return Plugin_Continue;
+			}
 		}
 	}
 	
