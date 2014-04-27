@@ -217,7 +217,7 @@ public Action:VIP_Add(client, args)
 		decl String:Query[255];
 		
 		// Set SQL query
-		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', '%s', 'a', '%s', %i)", SteamID, Name, days);
+		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', '%s', 'a', '%s', %s)", SteamID, Name, days);
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
@@ -233,9 +233,9 @@ public Action:VIP_Add(client, args)
 		else
 		{
 			// Log new VIP
-			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Added VIP %s (SteamID: %s) for %i days", Name, SteamID, days);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP %s (SteamID: %s) for %i days", Name, SteamID, days);
-			else PrintToServer("[VIP-Manager] Added VIP %s (SteamID: %s) for %i days", Name, SteamID, days);
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
+			else PrintToServer("[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
 		}
 		
 		// Close Query
@@ -282,7 +282,8 @@ public Action:VIP_Remove(client, args)
 		decl String:Query[255];
 		
 		// Set SQL query
-		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '\%%s\%'");
+		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s'", Name);
+		PrintToServer(Query);
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
