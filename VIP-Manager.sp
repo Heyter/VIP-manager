@@ -52,11 +52,15 @@ public Action:VIP_Help(client, args)
 	PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"]	| Adds a new VIP for give days.");
 	PrintToChat(client, "vipm_rm <name>							| Remove a VIP.");
 	PrintToChat(client, "vipm_check								| Checks for outdated VIPs.");
+	
+	return Plugin_Handled;
 }
 
 public Action:VIP_Check_Cmd(client, args)
 {
 	VIP_Check_Timer(INVALID_HANDLE);
+	
+	return Plugin_Handled;
 }
 
 // Checking for outdated VIPs
@@ -73,7 +77,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
-		return;
+		return Plugin_Continue;
 	}
 	else
 	{
@@ -91,12 +95,12 @@ public Action:VIP_Check_Timer(Handle:timer)
 			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
 			
-			return;
+			return Plugin_Continue;
 		}
 		else
 		{
 			// Return if none VIP is oudated
-			if(SQL_GetRowCount(hQuery) == 0) return;
+			if(SQL_GetRowCount(hQuery) == 0) return Plugin_Continue;
 			
 			// Delete all oudated VIPs
 			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
@@ -106,7 +110,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
-				return;
+				return Plugin_Continue;
 			}
 			else
 			{
@@ -132,6 +136,8 @@ public Action:VIP_Check_Timer(Handle:timer)
 		// Close connection
 		CloseHandle(connection);
 	}
+	
+	return Plugin_Handled;
 }
 
 public Action:VIP_Add(client, args)
@@ -140,7 +146,7 @@ public Action:VIP_Add(client, args)
 	if(args < 2)
 	{
 		PrintToChat(client, "[VIP-Manager] Use vipm_add <days> <name> [\"SteamID\"]");
-		return;
+		return Plugin_Continue;
 	}
 	
 	// Get days count, name and SteamID
@@ -181,7 +187,7 @@ public Action:VIP_Add(client, args)
 		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
-		return;
+		return Plugin_Continue;
 	}
 	else
 	{
@@ -199,7 +205,7 @@ public Action:VIP_Add(client, args)
 			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
-			return;
+			return Plugin_Continue;
 		}
 		else
 		{
@@ -214,6 +220,8 @@ public Action:VIP_Add(client, args)
 	
 	// Close connection
 	CloseHandle(connection);
+	
+	return Plugin_Handled;
 }
 
 public Action:VIP_Remove(client, args)
@@ -222,7 +230,7 @@ public Action:VIP_Remove(client, args)
 	if(args < 1)
 	{
 		PrintToChat(client, "[VIP-Manager] Use vipm_rm <name>");
-		return;
+		return Plugin_Continue;
 	}
 	
 	// Get Name
@@ -239,7 +247,7 @@ public Action:VIP_Remove(client, args)
 		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
-		return;
+		return Plugin_Continue;
 	}
 	else
 	{
@@ -257,7 +265,7 @@ public Action:VIP_Remove(client, args)
 			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
-			return;
+			return Plugin_Continue;
 		}
 		else
 		{
@@ -268,7 +276,7 @@ public Action:VIP_Remove(client, args)
 				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Found more than one VIP by searching for %s!", Name);
 				PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
 				
-				return;
+				return Plugin_Continue;
 			}
 			
 			// Get SteamID
@@ -285,7 +293,7 @@ public Action:VIP_Remove(client, args)
 				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
 				PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 				
-				return;
+				return Plugin_Continue;
 			}
 			
 			// Delete VIP
@@ -298,7 +306,7 @@ public Action:VIP_Remove(client, args)
 				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
-				return;
+				return Plugin_Continue;
 			}
 			else
 			{
@@ -314,6 +322,8 @@ public Action:VIP_Remove(client, args)
 	
 	//Close connection
 	CloseHandle(connection);
+	
+	return Plugin_Handled;
 }
 
 /*
