@@ -201,7 +201,7 @@ public Action:VIP_Add(client, args)
 		decl String:Query[255];
 		
 		// Set SQL query
-		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', %s, 'a', %s, %i)", SteamID, Name, days);
+		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', '%s', 'a', '%s', %i)", SteamID, Name, days);
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
