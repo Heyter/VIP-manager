@@ -74,7 +74,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 	if(connection == INVALID_HANDLE)
 	{
 		// Log error
-		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return Plugin_Continue;
@@ -92,7 +92,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 		{
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
-			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return Plugin_Continue;
@@ -107,7 +107,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 			{
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
 				return Plugin_Continue;
@@ -184,7 +184,7 @@ public Action:VIP_Add(client, args)
 	if(connection == INVALID_HANDLE)
 	{
 		// Log error
-		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return Plugin_Continue;
@@ -202,7 +202,7 @@ public Action:VIP_Add(client, args)
 		{
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
-			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return Plugin_Continue;
@@ -244,7 +244,7 @@ public Action:VIP_Remove(client, args)
 	if(connection == INVALID_HANDLE)
 	{
 		// Log error
-		if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return Plugin_Continue;
@@ -262,7 +262,7 @@ public Action:VIP_Remove(client, args)
 		{
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
-			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
 			PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return Plugin_Continue;
@@ -273,7 +273,7 @@ public Action:VIP_Remove(client, args)
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
 				// Log error
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Found more than one VIP by searching for %s!", Name);
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Found more than one VIP by searching for %s!", Name);
 				PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
 				
 				return Plugin_Continue;
@@ -290,7 +290,7 @@ public Action:VIP_Remove(client, args)
 			{
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error on Query! Error: %s", error);
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
 				PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 				
 				return Plugin_Continue;
@@ -303,7 +303,7 @@ public Action:VIP_Remove(client, args)
 			{
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
 				return Plugin_Continue;
