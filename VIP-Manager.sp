@@ -51,18 +51,20 @@ public Action:VIP_Help(client, args)
 	if(client > 0)
 	{
 		// For client
-		PrintToChat(client, "vipm_help 								| Show this text.");
-		PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"]	| Adds a new VIP for give days.");
-		PrintToChat(client, "vipm_rm <name>							| Remove a VIP.");
-		PrintToChat(client, "vipm_check								| Checks for outdated VIPs.");
+		PrintToChat(client, "vipm_help | Show this text.");
+		PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"] | Adds a new VIP for give days.");
+		PrintToChat(client, "vipm_rm <name> | Remove a VIP.");
+		PrintToChat(client, "vipm_check | Checks for outdated VIPs.");
+		PrintToChat(client, "[VIP-Manager] by %s (Version %s)", Author, Version);
 	}
 	else
 	{
 		// For server
-		PrintToServer("vipm_help 								| Show this text.");
-		PrintToServer("vipm_add <days> <name> [\"SteamID\"]	| Adds a new VIP for give days.");
-		PrintToServer("vipm_rm <name>							| Remove a VIP.");
-		PrintToServer("vipm_check								| Checks for outdated VIPs.");
+		PrintToServer("vipm_help | Show this text.");
+		PrintToServer("vipm_add <days> <name> [\"SteamID\"] | Adds a new VIP for give days.");
+		PrintToServer("vipm_rm <name> | Remove a VIP.");
+		PrintToServer("vipm_check | Checks for outdated VIPs.");
+		PrintToServer("[VIP-Manager] by %s (Version %s)", Author, Version);
 	}
 	
 	return Plugin_Handled;
