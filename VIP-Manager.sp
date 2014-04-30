@@ -176,17 +176,18 @@ public Action:VIP_Add(client, args)
 		// Search client by name
 		for(new i = 1; i <= MaxClients; i++)
 		{
-			if(!IsClientConnected(i)) continue;
-			
-			// Get client name
-			decl String:cName[255];
-			GetClientName(i, cName, sizeof(cName));
-			
-			if(StrEqual(Name, cName))
+			if(IsClientConnected(i))
 			{
-				// Get SteamID
-				GetClientAuthString(i, SteamID, sizeof(SteamID));
-				break;
+				// Get client name
+				decl String:cName[255];
+				GetClientName(i, cName, sizeof(cName));
+				
+				if(StrEqual(Name, cName, false))
+				{
+					// Get SteamID
+					GetClientAuthString(i, SteamID, sizeof(SteamID));
+					break;
+				}
 			}
 			else if(i == MaxClients)
 			{
