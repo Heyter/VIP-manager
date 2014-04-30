@@ -184,8 +184,10 @@ public Action:VIP_Add(client, args)
 				
 				if(StrContains(cName, Name, false))
 				{
-					// Get SteamID
+					// Get SteamID and set name to full name
 					GetClientAuthString(i, SteamID, sizeof(SteamID));
+					Name = cName;
+					
 					break;
 				}
 			}
