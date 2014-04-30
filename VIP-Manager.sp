@@ -182,7 +182,7 @@ public Action:VIP_Add(client, args)
 				decl String:cName[255];
 				GetClientName(i, cName, sizeof(cName));
 				
-				if(StrEqual(Name, cName, false))
+				if(StrContains(cName, Name, false))
 				{
 					// Get SteamID
 					GetClientAuthString(i, SteamID, sizeof(SteamID));
