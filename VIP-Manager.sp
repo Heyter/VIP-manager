@@ -61,8 +61,8 @@ public Action:VIP_Help(client, args)
 	{
 		// For server
 		PrintToServer("vipm_help | Show this text.");
-		PrintToServer("vipm_add <days> <name> [\"SteamID\"] | Adds a new VIP for give days.");
-		PrintToServer("vipm_rm <name> | Remove a VIP.");
+		PrintToServer("vipm_add <days> <\"name\"> [\"SteamID\"] | Adds a new VIP for give days.");
+		PrintToServer("vipm_rm <\"name\"> | Remove a VIP.");
 		PrintToServer("vipm_check | Checks for outdated VIPs.");
 		PrintToServer("[VIP-Manager] by %s (Version %s)", Author, Version);
 	}
@@ -248,8 +248,8 @@ public Action:VIP_Add(client, args)
 	// Check arguments count
 	if(args < 2)
 	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_add <days> <name> [\"SteamID\"]");
-		else PrintToServer("[VIP-Manager] Use vipm_add <days> <name> [\"SteamID\"]");
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_add <days> <\"name\"> [\"SteamID\"]");
+		else PrintToServer("[VIP-Manager] Use vipm_add <days> <\"name\"> [\"SteamID\"]");
 		
 		return Plugin_Continue;
 	}
@@ -347,8 +347,8 @@ public Action:VIP_Remove(client, args)
 	// Check arguments count
 	if(args < 1)
 	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_rm <name>");
-		else PrintToServer("[VIP-Manager] Use vipm_rm <name>");
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_rm <\"name\">");
+		else PrintToServer("[VIP-Manager] Use vipm_rm <\"name\">");
 		
 		return Plugin_Continue;
 	}
