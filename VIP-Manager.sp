@@ -273,7 +273,7 @@ public Action:VIP_Add(client, args)
 				decl String:cName[255] = "\0";
 				GetClientName(i, cName, sizeof(cName));
 				
-				if(StrContains(cName, Name, false))
+				if(StrContains(cName, Name, false) > 0)
 				{
 					// Get SteamID and set name to full name
 					GetClientAuthString(i, SteamID, sizeof(SteamID));
