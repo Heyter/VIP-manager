@@ -70,6 +70,9 @@ public Action:VIP_Help(client, args)
 
 public Action:VIP_Check_Cmd(client, args)
 {
+	if(client > 0) PrintToChat(client, "[VIP-Manager] Starting VIP check!");
+	else PrintToServer("[VIP-Manager] Starting VIP check!");
+	
 	// Create SQL connection
 	decl String:error[255];
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
@@ -106,7 +109,13 @@ public Action:VIP_Check_Cmd(client, args)
 		else
 		{
 			// Return if none VIP is oudated
-			if(SQL_GetRowCount(hQuery) == 0) return Plugin_Continue;
+			if(SQL_GetRowCount(hQuery) == 0)
+			{
+				if(client > 0) PrintToChat(client, "[VIP-Manager] None VIPs are outdated!");
+				else PrintToServer("[VIP-Manager] None VIPs are outdated!");
+				
+				return Plugin_Continue;
+			}
 			
 			// Delete all oudated VIPs
 			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
@@ -147,12 +156,17 @@ public Action:VIP_Check_Cmd(client, args)
 		CloseHandle(connection);
 	}
 	
+	if(client > 0) PrintToChat(client, "[VIP-Manager] VIP check finished!");
+	else PrintToServer("[VIP-Manager] VIP check finished!");
+	
 	return Plugin_Handled;
 }
 
 // Checking for outdated VIPs
 public Action:VIP_Check_Timer(Handle:timer)
 {
+	PrintToServer("[VIP-Manager] Starting VIP check!");
+	
 	// Create SQL connection
 	decl String:error[255];
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
@@ -212,6 +226,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 						SQL_FetchString(hQuery, 0, name, sizeof(name));
 						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
 						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+						PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
 					}
 				}
 			}
@@ -223,6 +238,8 @@ public Action:VIP_Check_Timer(Handle:timer)
 		// Close connection
 		CloseHandle(connection);
 	}
+	
+	PrintToServer("[VIP-Manager] VIP check finished!");
 	
 	return Plugin_Handled;
 }
