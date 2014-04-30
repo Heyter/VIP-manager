@@ -420,8 +420,8 @@ public Action:VIP_Remove(client, args)
 			else
 			{
 				// Log deleted VIP
-				decl cName[255];
-				if(client > 0) cName = GetClientName(client);
+				decl String:cName[255];
+				if(client > 0) GetClientName(client, cName, sizeof(cName));
 				else cName = "Server console";
 				
 				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
