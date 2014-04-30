@@ -191,8 +191,8 @@ public Action:VIP_Add(client, args)
 			}
 			else if(i == MaxClients)
 			{
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't find player %s", Name);
-				else PrintToServer("[VIP-Manager] Can't find player %s", Name);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't find player '%s'", Name);
+				else PrintToServer("[VIP-Manager] Can't find player '%s'", Name);
 				
 				return Plugin_Continue;
 			}
@@ -234,9 +234,9 @@ public Action:VIP_Add(client, args)
 		else
 		{
 			// Log new VIP
-			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
-			else PrintToServer("[VIP-Manager] Added VIP %s (SteamID: %s) for %s days", Name, SteamID, days);
+			if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
+			else PrintToServer("[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
 		}
 		
 		// Close Query
