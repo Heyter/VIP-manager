@@ -76,7 +76,7 @@ public Action:VIP_Check_Cmd(client, args)
 	else PrintToServer("[VIP-Manager] Starting VIP check!");
 	
 	// Create SQL connection
-	decl String:error[255];
+	decl String:error[255] = "\0";
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
 	
 	// Check for connection error
@@ -91,7 +91,7 @@ public Action:VIP_Check_Cmd(client, args)
 	}
 	else
 	{
-		decl String:query[255];
+		decl String:query[255] = "\0";
 		new Handle:hQuery;
 		
 		// Check for oudated VIPs
@@ -132,8 +132,8 @@ public Action:VIP_Check_Cmd(client, args)
 			}
 			else
 			{
-				decl String:name[255];
-				decl String:steamid[128];
+				decl String:name[255] = "\0";
+				decl String:steamid[128] = "\0";
 				
 				while(SQL_FetchRow(hQuery))
 				{
@@ -167,7 +167,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 	PrintToServer("[VIP-Manager] Starting VIP check!");
 	
 	// Create SQL connection
-	decl String:error[255];
+	decl String:error[255] = "\0";
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
 	
 	// Check for connection error
@@ -181,7 +181,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 	}
 	else
 	{
-		decl String:query[255];
+		decl String:query[255] = "\0";
 		new Handle:hQuery;
 		
 		// Check for oudated VIPs
@@ -217,8 +217,8 @@ public Action:VIP_Check_Timer(Handle:timer)
 				// Log all oudated VIPs
 				if(GetConVarBool(VIP_Log))
 				{
-					decl String:name[255];
-					decl String:steamid[128];
+					decl String:name[255] = "\0";
+					decl String:steamid[128] = "\0";
 					
 					while(SQL_FetchRow(hQuery))
 					{
@@ -255,9 +255,9 @@ public Action:VIP_Add(client, args)
 	}
 	
 	// Get days count, name and SteamID
-	decl String:SteamID[64];
-	decl String:Name[255];
-	decl String:days[16];
+	decl String:SteamID[64] = "\0";
+	decl String:Name[255] = "\0";
+	decl String:days[16] = "\0";
 	
 	GetCmdArg(1, days, sizeof(days));
 	GetCmdArg(2, Name, sizeof(Name));
@@ -270,7 +270,7 @@ public Action:VIP_Add(client, args)
 			if(IsClientConnected(i))
 			{
 				// Get client name
-				decl String:cName[255];
+				decl String:cName[255] = "\0";
 				GetClientName(i, cName, sizeof(cName));
 				
 				if(StrContains(cName, Name, false))
@@ -293,7 +293,7 @@ public Action:VIP_Add(client, args)
 	}
 	
 	// Create connection to sql server
-	decl String:error[255];
+	decl String:error[255] = "\0";
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
 	
 	if(connection == INVALID_HANDLE)
@@ -308,7 +308,7 @@ public Action:VIP_Add(client, args)
 	else
 	{
 		new Handle:hQuery;
-		decl String:Query[255];
+		decl String:Query[255] = "\0";
 		
 		// Set SQL query
 		Format(Query, sizeof(Query), "INSERT INTO sm_admins (authtype, identity, flags, name, expirationday) VALUES ('steam', '%s', 'a', '%s', %s)", SteamID, Name, days);
@@ -354,11 +354,11 @@ public Action:VIP_Remove(client, args)
 	}
 	
 	// Get Name
-	decl String:Name[255];
+	decl String:Name[255] = "\0";
 	GetCmdArg(1, Name, sizeof(Name));
 	
 	// Create connection to sql server
-	decl String:error[255];
+	decl String:error[255] = "\0";
 	new Handle:connection = SQL_DefConnect(error, sizeof(error));
 	
 	if(connection == INVALID_HANDLE)
@@ -373,7 +373,7 @@ public Action:VIP_Remove(client, args)
 	else
 	{
 		new Handle:hQuery;
-		decl String:Query[255];
+		decl String:Query[255] = "\0";
 		
 		// Set SQL query
 		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s'", Name);
@@ -403,7 +403,7 @@ public Action:VIP_Remove(client, args)
 			}
 			
 			// Get SteamID
-			decl String:SteamID[64];
+			decl String:SteamID[64] = "\0";
 			if(SQL_FetchRow(hQuery))
 			{
 				SQL_FetchString(hQuery, 0, SteamID, sizeof(SteamID));
@@ -436,7 +436,7 @@ public Action:VIP_Remove(client, args)
 			else
 			{
 				// Log deleted VIP
-				decl String:cName[255];
+				decl String:cName[255] = "\0";
 				if(client > 0) GetClientName(client, cName, sizeof(cName));
 				else cName = "Server console";
 				
