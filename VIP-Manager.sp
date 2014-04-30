@@ -302,7 +302,7 @@ public Action:VIP_Remove(client, args)
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
 				// Log error
-				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Found more than one VIP by searching for %s!", Name);
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Found more than one VIP by searching for '%s'!", Name);
 				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
 				else PrintToServer("[VIP-Manager] Found more than one VIP!");
 				
@@ -343,9 +343,9 @@ public Action:VIP_Remove(client, args)
 			else
 			{
 				// Log deleted VIP
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP %s (SteamID: %s)", Name, SteamID);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Deleted VIP %s (SteamID: %s)", Name, SteamID);
-				else PrintToServer("[VIP-Manager] Deleted VIP %s (SteamID: %s)", Name, SteamID);
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
+				else PrintToServer("[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
 			}
 		}
 		
