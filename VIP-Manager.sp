@@ -70,7 +70,82 @@ public Action:VIP_Help(client, args)
 
 public Action:VIP_Check_Cmd(client, args)
 {
-	VIP_Check_Timer(INVALID_HANDLE);
+	// Create SQL connection
+	decl String:error[255];
+	new Handle:connection = SQL_DefConnect(error, sizeof(error));
+	
+	// Check for connection error
+	if(connection == INVALID_HANDLE)
+	{
+		// Log error
+		if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		
+		return Plugin_Continue;
+	}
+	else
+	{
+		decl String:query[255];
+		new Handle:hQuery;
+		
+		// Check for oudated VIPs
+		Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0");
+		hQuery = SQL_Query(connection, query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			
+			return Plugin_Continue;
+		}
+		else
+		{
+			// Return if none VIP is oudated
+			if(SQL_GetRowCount(hQuery) == 0) return Plugin_Continue;
+			
+			// Delete all oudated VIPs
+			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
+			{
+				// Log error
+				SQL_GetError(connection, error, sizeof(error));
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				else PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+			
+				return Plugin_Continue;
+			}
+			else
+			{
+				// Log all oudated VIPs
+				if(GetConVarBool(VIP_Log))
+				{
+					decl String:name[255];
+					decl String:steamid[128];
+					
+					while(SQL_FetchRow(hQuery))
+					{
+						SQL_FetchString(hQuery, 0, name, sizeof(name));
+						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
+						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+						
+						if(client > 0) PrintToChat(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+						else PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+					}
+				}
+			}
+			
+			// Close Query
+			CloseHandle(hQuery);
+		}
+		
+		// Close connection
+		CloseHandle(connection);
+	}
 	
 	return Plugin_Handled;
 }
@@ -136,7 +211,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 					{
 						SQL_FetchString(hQuery, 0, name, sizeof(name));
 						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
-						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted.", name, steamid);
+						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
 					}
 				}
 			}
@@ -345,9 +420,13 @@ public Action:VIP_Remove(client, args)
 			else
 			{
 				// Log deleted VIP
-				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
-				else PrintToServer("[VIP-Manager] Deleted VIP '%s' (SteamID: %s)", Name, SteamID);
+				decl cName[255];
+				if(client > 0) cName = GetClientName(client);
+				else cName = "Server console";
+				
+				if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
+				else PrintToServer("[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
 			}
 		}
 		
