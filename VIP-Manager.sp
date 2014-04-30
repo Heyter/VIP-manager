@@ -132,21 +132,18 @@ public Action:VIP_Check_Cmd(client, args)
 			}
 			else
 			{
-				// Log all oudated VIPs
-				if(GetConVarBool(VIP_Log))
+				decl String:name[255];
+				decl String:steamid[128];
+				
+				while(SQL_FetchRow(hQuery))
 				{
-					decl String:name[255];
-					decl String:steamid[128];
+					SQL_FetchString(hQuery, 0, name, sizeof(name));
+					SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
 					
-					while(SQL_FetchRow(hQuery))
-					{
-						SQL_FetchString(hQuery, 0, name, sizeof(name));
-						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
-						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-						
-						if(client > 0) PrintToChat(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-						else PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-					}
+					// Log all oudated VIPs
+					if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+					if(client > 0) PrintToChat(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+					else PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
 				}
 			}
 			
