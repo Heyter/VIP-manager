@@ -25,6 +25,9 @@ new Handle:CheckTimer = INVALID_HANDLE;
 // Plugin start
 public OnPluginStart()
 {
+	// Print start message
+	PrintToServer("[VIP-Manager] Starting...");
+	
 	// Init CVars
 	VIP_Check_Activated = CreateConVar("vipm_check_activated", "true", "Activating checking for outdated VIPs");
 	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs");
@@ -42,7 +45,19 @@ public OnPluginStart()
 	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	
 	// Init Timer
-	if(GetConVarBool(VIP_Check_Activated)) CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+	if(GetConVarBool(VIP_Check_Activated))
+	{
+		CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarFloat(VIP_Check_Time));
+	}
+	else
+	{
+		PrintToServer("[VIP-Manager] Auto check disabled.");
+	}
+	
+	// Print finish message
+	PrintToServer("[VIP-Manager] Loaded successfully");
+	
 }
 
 public Action:VIP_Help(client, args)
