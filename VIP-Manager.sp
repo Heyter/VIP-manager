@@ -70,7 +70,7 @@ public Action:VIP_Help(client, args)
 	return Plugin_Handled;
 }
 
-public Action:VIP_Check_Cmd(client, args)
+VIP_Check(client)
 {
 	if(client > 0) PrintToChat(client, "[VIP-Manager] Starting VIP check!");
 	else PrintToServer("[VIP-Manager] Starting VIP check!");
@@ -87,7 +87,7 @@ public Action:VIP_Check_Cmd(client, args)
 		if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
-		return Plugin_Continue;
+		return false;
 	}
 	else
 	{
@@ -106,7 +106,7 @@ public Action:VIP_Check_Cmd(client, args)
 			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
 			
-			return Plugin_Continue;
+			return false;
 		}
 		else
 		{
@@ -116,7 +116,7 @@ public Action:VIP_Check_Cmd(client, args)
 				if(client > 0) PrintToChat(client, "[VIP-Manager] None VIPs are outdated!");
 				else PrintToServer("[VIP-Manager] None VIPs are outdated!");
 				
-				return Plugin_Continue;
+				return false;
 			}
 			
 			// Delete all oudated VIPs
@@ -128,7 +128,7 @@ public Action:VIP_Check_Cmd(client, args)
 				if(client > 0) PrintToChat(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 				else PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
-				return Plugin_Continue;
+				return false;
 			}
 			else
 			{
@@ -158,89 +158,20 @@ public Action:VIP_Check_Cmd(client, args)
 	if(client > 0) PrintToChat(client, "[VIP-Manager] VIP check finished!");
 	else PrintToServer("[VIP-Manager] VIP check finished!");
 	
-	return Plugin_Handled;
+	return true;
+}
+
+public Action:VIP_Check_Cmd(client, args)
+{
+  if(!VIP_Check(client)) return Plugin_Continue;
+  else return Plugin_Handled;
 }
 
 // Checking for outdated VIPs
 public Action:VIP_Check_Timer(Handle:timer)
 {
-	PrintToServer("[VIP-Manager] Starting VIP check!");
-	
-	// Create SQL connection
-	decl String:error[255] = "\0";
-	new Handle:connection = SQL_DefConnect(error, sizeof(error));
-	
-	// Check for connection error
-	if(connection == INVALID_HANDLE)
-	{
-		// Log error
-		if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		
-		return Plugin_Continue;
-	}
-	else
-	{
-		decl String:query[255] = "\0";
-		new Handle:hQuery;
-		
-		// Check for oudated VIPs
-		Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0");
-		hQuery = SQL_Query(connection, query);
-		
-		if(hQuery == INVALID_HANDLE)
-		{
-			// Log error
-			SQL_GetError(connection, error, sizeof(error));
-			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
-			PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
-			
-			return Plugin_Continue;
-		}
-		else
-		{
-			// Return if none VIP is oudated
-			if(SQL_GetRowCount(hQuery) == 0) return Plugin_Continue;
-			
-			// Delete all oudated VIPs
-			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
-			{
-				// Log error
-				SQL_GetError(connection, error, sizeof(error));
-				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-				PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-			
-				return Plugin_Continue;
-			}
-			else
-			{
-				// Log all oudated VIPs
-				if(GetConVarBool(VIP_Log))
-				{
-					decl String:name[255] = "\0";
-					decl String:steamid[128] = "\0";
-					
-					while(SQL_FetchRow(hQuery))
-					{
-						SQL_FetchString(hQuery, 0, name, sizeof(name));
-						SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
-						LogMessage("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-						PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-					}
-				}
-			}
-			
-			// Close Query
-			CloseHandle(hQuery);
-		}
-		
-		// Close connection
-		CloseHandle(connection);
-	}
-	
-	PrintToServer("[VIP-Manager] VIP check finished!");
-	
-	return Plugin_Handled;
+	if(!VIP_Check(0)) return Plugin_Continue;
+	else return Plugin_Handled;
 }
 
 public Action:VIP_Add(client, args)
