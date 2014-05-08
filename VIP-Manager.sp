@@ -29,10 +29,10 @@ public OnPluginStart()
 	PrintToServer("[VIP-Manager] Starting...");
 	
 	// Init CVars
-	VIP_Check_Activated = CreateConVar("vipm_check_activated", "true", "Activating checking for outdated VIPs");
-	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs");
+	VIP_Check_Activated = CreateConVar("vipm_check_activated", "1", "Activating checking for outdated VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
+	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs", FCVAR_NONE, true, 1.0);
 	
-	VIP_Log = CreateConVar("vipm_log", "false", "Activate logging. Logs all added and removed VIPs");
+	VIP_Log = CreateConVar("vipm_log", "0", "Activate logging. Logs all added and removed VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
 	
 	// Use config file
 	AutoExecConfig(true, "VIP-Manager");
@@ -48,12 +48,16 @@ public OnPluginStart()
 	if(GetConVarBool(VIP_Check_Activated))
 	{
 		CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
-		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarFloat(VIP_Check_Time));
+		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarInt(VIP_Check_Time));
 	}
 	else
 	{
 		PrintToServer("[VIP-Manager] Auto check disabled.");
 	}
+	
+	// Print log status
+	if(GetConVarBool(VIP_Log)) PrintToServer("[VIP-Manager] Logging enabled.");
+	else PrintToServer("[VIP-Manager] Logging disabled.");
 	
 	// Print finish message
 	PrintToServer("[VIP-Manager] Loaded successfully");
