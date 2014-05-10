@@ -345,8 +345,16 @@ public Action:VIP_Remove(client, args)
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
 				// Print error
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
-				else PrintToServer("[VIP-Manager] Found more than one VIP!");
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like %!", Name);
+				else PrintToServer("[VIP-Manager] Found more than one VIP with the name like %!", Name);
+				
+				return Plugin_Continue;
+			}
+			else if(SQL_GetRowCount(hQuery) == 0)
+			{
+				// Print error
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like %!", Name);
+				else PrintToServer("[VIP-Manager] Can't found VIP with the name like %!", Name);
 				
 				return Plugin_Continue;
 			}
@@ -476,28 +484,55 @@ public Action:VIP_Change_Time(client, args)
 				if(SQL_GetRowCount(hQuery) > 1)
 				{
 					// Print error
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
-					else PrintToServer("[VIP-Manager] Found more than one VIP!");
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like %!", name);
+					else PrintToServer("[VIP-Manager] Found more than one VIP with the name like %!", name);
+					
+					return Plugin_Continue;
+				}
+				else if(SQL_GetRowCount(hQuery) == 0)
+				{
+					// Print error
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like %!", name);
+					else PrintToServer("[VIP-Manager] Can't found VIP with the name like %!", name);
+					
+					return Plugin_Continue;
+				}
+				
+				// Get full VIP name
+				if(SQL_FetchRow(hQuery)) SQL_FetchString(hQuery, 0, name, sizeof(name));
+				else
+				{
+					// Log error
+					SQL_GetError(connection, error, sizeof(error));
+					if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+					else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+					
+					return Plugin_Continue;
+				}
+				
+				// Update time
+				if(!SQL_FastQuery(connection, query))
+				{
+					// Log error
+					SQL_GetError(connection, error, sizeof(error));
+					if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+					else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
 					
 					return Plugin_Continue;
 				}
 				else
 				{
-					// Get full VIP name
-					if(SQL_FetchRow(hQuery)) SQL_FetchString(hQuery, 0, name, sizeof(name));
-					else
-					{
-						// Log error
-						SQL_GetError(connection, error, sizeof(error));
-						if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
-						if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-						else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
-						
-						return Plugin_Continue;
-					}
+					// Get new time and steamID
+					decl String:nDays[16] = "\0";
+					decl String:steamID[128] = "\0";
 					
-					// Update time
-					if(!SQL_FastQuery(connection, query))
+					CloseHandle(hQuery);
+					Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s' AND flags = 'a'", name);
+					hQuery = SQL_Query(connection, sQuery);
+					
+					if(hQuery == INVALID_HANDLE)
 					{
 						// Log error
 						SQL_GetError(connection, error, sizeof(error));
@@ -509,15 +544,13 @@ public Action:VIP_Change_Time(client, args)
 					}
 					else
 					{
-						// Get new time and steamID
-						decl String:nDays[16] = "\0";
-						decl String:steamID[128] = "\0";
-						
-						CloseHandle(hQuery);
-						Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s' AND flags = 'a'", name);
-						hQuery = SQL_Query(connection, sQuery);
-						
-						if(hQuery == INVALID_HANDLE)
+						// Set new time and steamid
+						if(SQL_FetchRow(hQuery))
+						{
+							SQL_FetchString(hQuery, 0, nDays, sizeof(nDays));
+							SQL_FetchString(hQuery, 1, steamID, sizeof(steamID));
+						}
+						else
 						{
 							// Log error
 							SQL_GetError(connection, error, sizeof(error));
@@ -527,31 +560,12 @@ public Action:VIP_Change_Time(client, args)
 							
 							return Plugin_Continue;
 						}
-						else
-						{
-							// Set new time and steamid
-							if(SQL_FetchRow(hQuery))
-							{
-								SQL_FetchString(hQuery, 0, nDays, sizeof(nDays));
-								SQL_FetchString(hQuery, 1, steamID, sizeof(steamID));
-							}
-							else
-							{
-								// Log error
-								SQL_GetError(connection, error, sizeof(error));
-								if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
-								if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-								else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
-								
-								return Plugin_Continue;
-							}
-							
-							// Log change
-							if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
-							
-							if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
-							else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
-						}
+						
+						// Log change
+						if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+						
+						if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+						else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
 					}
 				}
 			}
