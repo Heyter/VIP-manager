@@ -114,7 +114,7 @@ VIP_Check(client)
 		new Handle:hQuery;
 		
 		// Check for oudated VIPs
-		Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0");
+		Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0 AND flags = 'a'");
 		hQuery = SQL_Query(connection, query);
 		
 		if(hQuery == INVALID_HANDLE)
@@ -139,7 +139,7 @@ VIP_Check(client)
 			}
 			
 			// Delete all oudated VIPs
-			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0"))
+			if(!SQL_FastQuery(connection, "DELETE FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL expirationday DAY), NOW()) < 0 AND expirationday >= 0 AND flags = 'a'"))
 			{
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
@@ -326,7 +326,7 @@ public Action:VIP_Remove(client, args)
 		decl String:Query[255] = "\0";
 		
 		// Set SQL query
-		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s'", Name);
+		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s' AND flags = 'a'", Name);
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
@@ -370,7 +370,7 @@ public Action:VIP_Remove(client, args)
 			}
 			
 			// Delete VIP
-			Format(Query, sizeof(Query), "DELETE FROM sm_admins WHERE identity = '%s'", SteamID);
+			Format(Query, sizeof(Query), "DELETE FROM sm_admins WHERE identity = '%s' AND flags = 'a'", SteamID);
 			
 			if(!SQL_FastQuery(connection, Query))
 			{
@@ -427,9 +427,9 @@ public Action:VIP_Change_Time(client, args)
 		GetCmdArg(3, days, sizeof(days));
 		
 		// Check change mode
-		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = %s", days, name);
-		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = %s", days, name);
-		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday  - %s WHERE name = %s", days, name);
+		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = %s AND flags = 'a'", days, name);
+		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = %s AND flags = 'a'", days, name);
+		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name = %s AND flags = 'a'", days, name);
 		else
 		{
 			if(client > 0) PrintToChat(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
@@ -457,7 +457,7 @@ public Action:VIP_Change_Time(client, args)
 			decl String:sQuery[255] = "\0";
 			
 			// Set SQL query
-			Format(sQuery, sizeof(sQuery), "SELECT name FROM sm_admins WHERE name LIKE '%s'", name);
+			Format(sQuery, sizeof(sQuery), "SELECT name FROM sm_admins WHERE name LIKE '%s' AND flags = 'a'", name);
 			hQuery = SQL_Query(connection, sQuery);
 			
 			if(hQuery == INVALID_HANDLE)
@@ -514,7 +514,7 @@ public Action:VIP_Change_Time(client, args)
 						decl String:steamID[128] = "\0";
 						
 						CloseHandle(hQuery);
-						Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s'", name);
+						Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s' AND flags = 'a'", name);
 						hQuery = SQL_Query(connection, sQuery);
 						
 						if(hQuery == INVALID_HANDLE)
