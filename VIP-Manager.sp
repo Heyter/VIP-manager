@@ -344,8 +344,7 @@ public Action:VIP_Remove(client, args)
 			// Check count of founded VIPs
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
-				// Log error
-				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Found more than one VIP by searching for '%s'!", Name);
+				// Print error
 				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
 				else PrintToServer("[VIP-Manager] Found more than one VIP!");
 				
