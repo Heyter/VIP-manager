@@ -42,6 +42,7 @@ public OnPluginStart()
 	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
+	RegAdminCmd("vipm_time", VIP_Change_Time, ADMFLAG_ROOT, "Change time of a VIP");
 	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 	
 	// Init Timer
@@ -70,6 +71,7 @@ public Action:VIP_Help(client, args)
 		PrintToChat(client, "vipm_help | Show this text.");
 		PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"] | Adds a new VIP for give days.");
 		PrintToChat(client, "vipm_rm <name> | Remove a VIP.");
+		PrintToChat(client, "vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
 		PrintToChat(client, "vipm_check | Checks for outdated VIPs.");
 		PrintToChat(client, "[VIP-Manager] by %s (Version %s)", Author, Version);
 	}
@@ -79,6 +81,7 @@ public Action:VIP_Help(client, args)
 		PrintToServer("vipm_help | Show this text.");
 		PrintToServer("vipm_add <days> <\"name\"> [\"SteamID\"] | Adds a new VIP for give days.");
 		PrintToServer("vipm_rm <\"name\"> | Remove a VIP.");
+		PrintToServer("vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
 		PrintToServer("vipm_check | Checks for outdated VIPs.");
 		PrintToServer("[VIP-Manager] by %s (Version %s)", Author, Version);
 	}
@@ -399,6 +402,168 @@ public Action:VIP_Remove(client, args)
 	
 	//Close connection
 	CloseHandle(connection);
+	
+	return Plugin_Handled;
+}
+
+public Action:VIP_Change_Time(client, args)
+{
+	// Check arguments
+	if(args < 3)
+	{
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <time>");
+		else PrintToServer("[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <days>");
+	}
+	else
+	{
+		// Init variables
+		decl String:query[255] = "\0";
+		decl String:cMode[16] = "\0";
+		decl String:name[255] = "\0";
+		decl String:days[16] = "\0";
+		
+		// Get command arguments
+		GetCmdArg(1, cMode, sizeof(cMode));
+		GetCmdArg(2, name, sizeof(name));
+		GetCmdArg(3, days, sizeof(days));
+		
+		// Check change mode
+		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = %s", days, name);
+		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = %s", days, name);
+		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday  - %s WHERE name = %s", days, name);
+		else
+		{
+			if(client > 0) PrintToChat(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
+			else PrintToServer("[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
+			
+			return Plugin_Continue;
+		}
+	
+		// Create connection to sql server
+		decl String:error[255] = "\0";
+		new Handle:connection = SQL_DefConnect(error, sizeof(error));
+		
+		if(connection == INVALID_HANDLE)
+		{
+			// Log error
+			if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+			else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+			
+			return Plugin_Continue;
+		}
+		else
+		{
+			new Handle:hQuery;
+			decl String:sQuery[255] = "\0";
+			
+			// Set SQL query
+			Format(sQuery, sizeof(sQuery), "SELECT name FROM sm_admins WHERE name LIKE '%s'", name);
+			hQuery = SQL_Query(connection, sQuery);
+			
+			if(hQuery == INVALID_HANDLE)
+			{
+				// Log error
+				SQL_GetError(connection, error, sizeof(error));
+				if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+				else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+				
+				return Plugin_Continue;
+			}
+			else
+			{
+				// Check count of founded VIPs
+				if(SQL_GetRowCount(hQuery) > 1)
+				{
+					// Print error
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP!");
+					else PrintToServer("[VIP-Manager] Found more than one VIP!");
+					
+					return Plugin_Continue;
+				}
+				else
+				{
+					// Get full VIP name
+					if(SQL_FetchRow(hQuery)) SQL_FetchString(hQuery, 0, name, sizeof(name));
+					else
+					{
+						// Log error
+						SQL_GetError(connection, error, sizeof(error));
+						if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+						if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+						else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+						
+						return Plugin_Continue;
+					}
+					
+					// Update time
+					if(!SQL_FastQuery(connection, query))
+					{
+						// Log error
+						SQL_GetError(connection, error, sizeof(error));
+						if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+						if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+						else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+						
+						return Plugin_Continue;
+					}
+					else
+					{
+						// Get new time and steamID
+						decl String:nDays[16] = "\0";
+						decl String:steamID[128] = "\0";
+						
+						CloseHandle(hQuery);
+						Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s'", name);
+						hQuery = SQL_Query(connection, sQuery);
+						
+						if(hQuery == INVALID_HANDLE)
+						{
+							// Log error
+							SQL_GetError(connection, error, sizeof(error));
+							if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+							if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+							else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+							
+							return Plugin_Continue;
+						}
+						else
+						{
+							// Set new time and steamid
+							if(SQL_FetchRow(hQuery))
+							{
+								SQL_FetchString(hQuery, 0, nDays, sizeof(nDays));
+								SQL_FetchString(hQuery, 1, steamID, sizeof(steamID));
+							}
+							else
+							{
+								// Log error
+								SQL_GetError(connection, error, sizeof(error));
+								if(GetConVarBool(VIP_Log)) LogError("[VIP-Manager] Error on Query! Error: %s", error);
+								if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+								else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+								
+								return Plugin_Continue;
+							}
+							
+							// Log change
+							if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+							
+							if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+							else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+						}
+					}
+				}
+			}
+			
+			// Close hQuery
+			CloseHandle(hQuery);
+		}
+		
+		// Close connection
+		CloseHandle(connection);
+	}
 	
 	return Plugin_Handled;
 }
