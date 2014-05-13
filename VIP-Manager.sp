@@ -435,9 +435,9 @@ public Action:VIP_Change_Time(client, args)
 		GetCmdArg(3, days, sizeof(days));
 		
 		// Check change mode
-		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = %s AND flags = 'a'", days, name);
-		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = %s AND flags = 'a'", days, name);
-		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name = %s AND flags = 'a'", days, name);
+		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = '%s' AND flags = 'a'", days, name);
+		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = '%s' AND flags = 'a'", days, name);
+		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name = '%s' AND flags = 'a'", days, name);
 		else
 		{
 			if(client > 0) PrintToChat(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
