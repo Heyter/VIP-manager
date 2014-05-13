@@ -562,10 +562,10 @@ public Action:VIP_Change_Time(client, args)
 						}
 						
 						// Log change
-						if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+						if(GetConVarBool(VIP_Log)) LogMessage("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
 						
-						if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
-						else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Chaged: %s %s days", name, steamID, nDays, cMode, days);
+						if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
+						else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
 					}
 				}
 			}
