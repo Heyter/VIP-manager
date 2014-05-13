@@ -345,16 +345,16 @@ public Action:VIP_Remove(client, args)
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
 				// Print error
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like %!", Name);
-				else PrintToServer("[VIP-Manager] Found more than one VIP with the name like %!", Name);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", Name);
+				else PrintToServer("[VIP-Manager] Found more than one VIP with the name like '%s'!", Name);
 				
 				return Plugin_Continue;
 			}
 			else if(SQL_GetRowCount(hQuery) == 0)
 			{
 				// Print error
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like %!", Name);
-				else PrintToServer("[VIP-Manager] Can't found VIP with the name like %!", Name);
+				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", Name);
+				else PrintToServer("[VIP-Manager] Can't found VIP with the name like '%s'!", Name);
 				
 				return Plugin_Continue;
 			}
@@ -484,16 +484,16 @@ public Action:VIP_Change_Time(client, args)
 				if(SQL_GetRowCount(hQuery) > 1)
 				{
 					// Print error
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like %!", name);
-					else PrintToServer("[VIP-Manager] Found more than one VIP with the name like %!", name);
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", name);
+					else PrintToServer("[VIP-Manager] Found more than one VIP with the name like '%s'!", name);
 					
 					return Plugin_Continue;
 				}
 				else if(SQL_GetRowCount(hQuery) == 0)
 				{
 					// Print error
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like %!", name);
-					else PrintToServer("[VIP-Manager] Can't found VIP with the name like %!", name);
+					if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", name);
+					else PrintToServer("[VIP-Manager] Can't found VIP with the name like '%s'!", name);
 					
 					return Plugin_Continue;
 				}
