@@ -4,7 +4,7 @@
 #define Author "Shadow_Man"
 #define Version "0.1 Alpha"
 
-public Plugin:info =
+public Plugin:myinfo =
 {
 	name = "VIP-Manager",
 	author = Author,
