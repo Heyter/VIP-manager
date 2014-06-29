@@ -23,7 +23,7 @@ public Handle:VIP_Log = INVALID_HANDLE;
 new Handle:CheckTimer = INVALID_HANDLE;
 
 // Logfile path
-new String:logFilePath;
+new String:logFilePath[512];
 
 // Plugin start
 public OnPluginStart()
