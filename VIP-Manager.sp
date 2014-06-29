@@ -2,7 +2,7 @@
 
 // Plugin information
 #define Author "Shadow_Man"
-#define Version "0.1 Alpha"
+#define Version "0.2 Alpha"
 
 public Plugin:myinfo =
 {
