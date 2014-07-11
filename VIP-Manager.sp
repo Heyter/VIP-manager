@@ -46,8 +46,11 @@ public OnPluginStart()
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
 	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
 	RegAdminCmd("vipm_time", VIP_Change_Time, ADMFLAG_ROOT, "Change time of a VIP");
-	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
-	
+	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");	
+}
+
+public OnConfigsExecuted()
+{
 	// Init Timer
 	if(GetConVarBool(VIP_Check_Activated))
 	{
@@ -69,7 +72,6 @@ public OnPluginStart()
 	
 	// Print finish message
 	PrintToServer("[VIP-Manager] Loaded successfully");
-	
 }
 
 public Action:VIP_Help(client, args)
