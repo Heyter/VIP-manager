@@ -171,6 +171,9 @@ VIP_Check(client)
 					SQL_FetchString(hQuery, 0, name, sizeof(name));
 					SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
 					
+					// Execute custom SQL queries
+					Execute_Custom_OnRemove_Queries(client, steamid, connection);
+					
 					// Log all oudated VIPs
 					if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
 					if(client > 0) PrintToChat(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
@@ -288,6 +291,9 @@ public Action:VIP_Add(client, args)
 		}
 		else
 		{
+			// Execute custom SQL queries
+			Execute_Custom_OnAdd_Queries(client, SteamID, connection);
+			
 			// Log new VIP
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
 			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
@@ -404,6 +410,9 @@ public Action:VIP_Remove(client, args)
 			}
 			else
 			{
+				// Execute custom SQL queries
+				Execute_Custom_OnRemove_Queries(client, SteamID, connection);
+				
 				// Log deleted VIP
 				decl String:cName[255] = "\0";
 				if(client > 0) GetClientName(client, cName, sizeof(cName));
@@ -591,4 +600,114 @@ public Action:VIP_Change_Time(client, args)
 	}
 	
 	return Plugin_Handled;
+}
+
+Execute_Custom_OnAdd_Queries(client, String:steamID[], Handle:connection)
+{
+	// Check file
+	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnAdd.cfg";
+	if(!FileExists(queryFilePath))
+	{
+		PrintToServer("[VIP-Manager] Can't find file %s", queryFilePath);
+		return;
+	}
+	
+	new Handle:queryFile = OpenFile(queryFilePath, "r");
+	new String:query[1024];
+	
+	new Handle:hQuery;
+	new String:error[255];
+	
+	while(!IsEndOfFile(queryFile))
+	{
+		ReadFileLine(queryFile, query, sizeof(query));
+		
+		if(IsStringEmpty(query))
+		{
+			PrintToServer("Query is empty!");
+			continue;
+		}
+		
+		FormatQuery(query, sizeof(query), steamID);
+		
+		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
+		else PrintToServer("[VIP-Manager] Execute custom query: %s", query);
+		
+		hQuery = SQL_Query(connection, query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+		}
+		else CloseHandle(hQuery);
+	}
+	
+	CloseHandle(queryFile);
+}
+
+Execute_Custom_OnRemove_Queries(client, String:steamID[], Handle:connection)
+{
+	// Check file
+	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnRemove.cfg";
+	if(!FileExists(queryFilePath))
+	{
+		PrintToServer("[VIP-Manager] Can't find file %s", queryFilePath);
+		return;
+	}
+	
+	new Handle:queryFile = OpenFile(queryFilePath, "r");
+	new String:query[1024];
+	
+	new Handle:hQuery;
+	new String:error[255];
+	
+	while(!IsEndOfFile(queryFile))
+	{
+		ReadFileLine(queryFile, query, sizeof(query));
+		
+		if(IsStringEmpty(query))
+		{
+			PrintToServer("Query is empty!");
+			continue;
+		}
+		
+		FormatQuery(query, sizeof(query), steamID);
+		
+		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
+		else PrintToServer("[VIP-Manager] Execute custom query: %s", query);
+		
+		hQuery = SQL_Query(connection, query);
+		
+		if(hQuery == INVALID_HANDLE)
+		{
+			// Log error
+			SQL_GetError(connection, error, sizeof(error));
+			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
+			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+		}
+		else CloseHandle(hQuery);
+	}
+	
+	CloseHandle(queryFile);
+}
+
+FormatQuery(String:query[], maxlenght, String:steamID[])
+{
+	TrimString(query);
+	
+	// Replace Steam id
+	ReplaceString(query, maxlenght, "{sid}", steamID, false);
+}
+
+bool:IsStringEmpty(String:str[])
+{
+	// todo make this works
+	return !str[0];
 }
