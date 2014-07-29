@@ -172,7 +172,7 @@ VIP_Check(client)
 					SQL_FetchString(hQuery, 1, steamid, sizeof(steamid));
 					
 					// Execute custom SQL queries
-					Execute_Custom_OnRemove_Queries(client, steamid, connection);
+					Execute_Custom_OnRemove_Queries(client, connection, steamid, name);
 					
 					// Log all oudated VIPs
 					if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
@@ -292,7 +292,7 @@ public Action:VIP_Add(client, args)
 		else
 		{
 			// Execute custom SQL queries
-			Execute_Custom_OnAdd_Queries(client, SteamID, connection);
+			Execute_Custom_OnAdd_Queries(client, connection, SteamID, Name, days);
 			
 			// Log new VIP
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
@@ -411,7 +411,7 @@ public Action:VIP_Remove(client, args)
 			else
 			{
 				// Execute custom SQL queries
-				Execute_Custom_OnRemove_Queries(client, SteamID, connection);
+				Execute_Custom_OnRemove_Queries(client, connection, SteamID, Name);
 				
 				// Log deleted VIP
 				decl String:cName[255] = "\0";
@@ -602,7 +602,7 @@ public Action:VIP_Change_Time(client, args)
 	return Plugin_Handled;
 }
 
-Execute_Custom_OnAdd_Queries(client, String:steamID[], Handle:connection)
+Execute_Custom_OnAdd_Queries(client, Handle:connection, String:steamID[], String:VIPname[], String:VIPtime[])
 {
 	// Check file
 	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnAdd.cfg";
@@ -628,7 +628,7 @@ Execute_Custom_OnAdd_Queries(client, String:steamID[], Handle:connection)
 			continue;
 		}
 		
-		FormatQuery(query, sizeof(query), steamID);
+		FormatQuery(query, sizeof(query), steamID, VIPname, VIPtime);
 		
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
 		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
@@ -650,7 +650,7 @@ Execute_Custom_OnAdd_Queries(client, String:steamID[], Handle:connection)
 	CloseHandle(queryFile);
 }
 
-Execute_Custom_OnRemove_Queries(client, String:steamID[], Handle:connection)
+Execute_Custom_OnRemove_Queries(client, Handle:connection, String:steamID[], String:VIPname[])
 {
 	// Check file
 	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnRemove.cfg";
@@ -676,7 +676,7 @@ Execute_Custom_OnRemove_Queries(client, String:steamID[], Handle:connection)
 			continue;
 		}
 		
-		FormatQuery(query, sizeof(query), steamID);
+		FormatQuery(query, sizeof(query), steamID, VIPname, "");
 		
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
 		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
@@ -698,12 +698,18 @@ Execute_Custom_OnRemove_Queries(client, String:steamID[], Handle:connection)
 	CloseHandle(queryFile);
 }
 
-FormatQuery(String:query[], maxlenght, String:steamID[])
+FormatQuery(String:query[], maxlenght, String:steamID[], String:VIPname[], String:VIPtime[])
 {
 	TrimString(query);
 	
 	// Replace Steam id
-	ReplaceString(query, maxlenght, "{sid}", steamID, false);
+	ReplaceString(query, maxlenght, "{steamid}", steamID, false);
+	
+	// Replace VIP name
+	ReplaceString(query, maxlenght, "{name}", VIPname, false);
+	
+	// Replace VIP time
+	ReplaceString(query, maxlenght, "{time}", VIPtime, false);
 }
 
 bool:IsStringEmpty(String:str[])
