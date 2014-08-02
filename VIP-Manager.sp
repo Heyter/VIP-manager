@@ -81,7 +81,7 @@ public Action:VIP_Help(client, args)
 	{
 		// For client
 		PrintToChat(client, "vipm_help | Show this text.");
-		PrintToChat(client, "vipm_add <days> <name> [\"SteamID\"] | Adds a new VIP for give days.");
+		PrintToChat(client, "vipm_add <name> <days> [\"SteamID\"] | Adds a new VIP for give days.");
 		PrintToChat(client, "vipm_rm <name> | Remove a VIP.");
 		PrintToChat(client, "vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
 		PrintToChat(client, "vipm_check | Checks for outdated VIPs.");
@@ -213,8 +213,8 @@ public Action:VIP_Add(client, args)
 	// Check arguments count
 	if(args < 2)
 	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_add <days> <\"name\"> [\"SteamID\"]");
-		else PrintToServer("[VIP-Manager] Use vipm_add <days> <\"name\"> [\"SteamID\"]");
+		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
+		else PrintToServer("[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
 		
 		return Plugin_Continue;
 	}
@@ -224,8 +224,8 @@ public Action:VIP_Add(client, args)
 	decl String:Name[255] = "\0";
 	decl String:days[16] = "\0";
 	
-	GetCmdArg(1, days, sizeof(days));
-	GetCmdArg(2, Name, sizeof(Name));
+	GetCmdArg(1, Name, sizeof(Name));
+	GetCmdArg(2, days, sizeof(days));
 	if(args == 3)
 	{
 		GetCmdArg(3, SteamID, sizeof(SteamID));
