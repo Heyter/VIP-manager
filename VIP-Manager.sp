@@ -354,7 +354,7 @@ public Action:VIP_Remove(client, args)
 		decl String:Query[255] = "\0";
 		
 		// Set SQL query
-		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s' AND flags = 'a'", Name);
+		Format(Query, sizeof(Query), "SELECT identity, name FROM sm_admins WHERE name LIKE '%s%s%s' AND flags = 'a'", '%', Name, '%');
 		hQuery = SQL_Query(connection, Query);
 		
 		if(hQuery == INVALID_HANDLE)
@@ -466,9 +466,9 @@ public Action:VIP_Change_Time(client, args)
 		GetCmdArg(3, days, sizeof(days));
 		
 		// Check change mode
-		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name = '%s' AND flags = 'a'", days, name);
-		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name = '%s' AND flags = 'a'", days, name);
-		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name = '%s' AND flags = 'a'", days, name);
+		if(StrEqual(cMode, "set", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = %s WHERE name LIKE '%s%s%s'", days, '%', name, '%');
+		else if(StrEqual(cMode, "add", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday + %s WHERE name LIKE '%s%s%s'", days, '%', name, '%');
+		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name LIKE '%s%s%s'", days, '%', name, '%');
 		else
 		{
 			if(client > 0) PrintToChat(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
@@ -496,7 +496,7 @@ public Action:VIP_Change_Time(client, args)
 			decl String:sQuery[255] = "\0";
 			
 			// Set SQL query
-			Format(sQuery, sizeof(sQuery), "SELECT name FROM sm_admins WHERE name LIKE '%s' AND flags = 'a'", name);
+			Format(sQuery, sizeof(sQuery), "SELECT name FROM sm_admins WHERE name LIKE '%s%s%s'", '%', name, '%');
 			hQuery = SQL_Query(connection, sQuery);
 			
 			if(hQuery == INVALID_HANDLE)
@@ -560,7 +560,7 @@ public Action:VIP_Change_Time(client, args)
 					decl String:steamID[128] = "\0";
 					
 					CloseHandle(hQuery);
-					Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name = '%s' AND flags = 'a'", name);
+					Format(sQuery, sizeof(sQuery), "SELECT expirationday,identity FROM sm_admins WHERE name LIKE '%s%s%s'", '%', name, '%');
 					hQuery = SQL_Query(connection, sQuery);
 					
 					if(hQuery == INVALID_HANDLE)
