@@ -226,7 +226,17 @@ public Action:VIP_Add(client, args)
 	
 	GetCmdArg(1, days, sizeof(days));
 	GetCmdArg(2, Name, sizeof(Name));
-	if(args == 3) GetCmdArg(3, SteamID, sizeof(SteamID));
+	if(args == 3)
+	{
+		GetCmdArg(3, SteamID, sizeof(SteamID));
+		if(!CheckSteamID(SteamID))
+		{
+			if(client > 0) PrintToChat(client, "[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXX)");
+			else PrintToServer("[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXX)");
+			
+			return Plugin_Continue;
+		}
+	}
 	else
 	{
 		// Search client by name
@@ -716,4 +726,12 @@ bool:IsStringEmpty(String:str[])
 {
 	// todo make this works
 	return !str[0];
+}
+
+bool:CheckSteamID(String:steamID[])
+{	
+	return (strlen(steamID) == 16 &&
+			strncmp(steamID, "STEAM_", 6, false) == 0 &&
+			steamID[7] == ':' &&
+			steamID[9] == ':');
 }
