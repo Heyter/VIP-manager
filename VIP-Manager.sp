@@ -755,8 +755,7 @@ bool:IsStringEmpty(String:str[])
 
 bool:CheckSteamID(String:steamID[])
 {	
-	return (strlen(steamID) == 16 &&
-			strncmp(steamID, "STEAM_", 6, false) == 0 &&
+	return (strncmp(steamID, "STEAM_", 6, false) == 0 &&
 			steamID[7] == ':' &&
 			steamID[9] == ':');
 }
