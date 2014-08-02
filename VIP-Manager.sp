@@ -37,6 +37,10 @@ public OnPluginStart()
 	
 	VIP_Log = CreateConVar("vipm_log", "0", "Activate logging. Logs all added and removed VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
 	
+	// Set CVars hooks
+	HookConVarChange(VIP_Check_Activated, OnCheckActivatedChanged);
+	HookConVarChange(VIP_Check_Time, OnCheckTimeChanged);
+	
 	// Use config file
 	AutoExecConfig(true, "VIP-Manager");
 	
@@ -52,12 +56,7 @@ public OnPluginStart()
 public OnConfigsExecuted()
 {
 	// Init Timer
-	if(GetConVarBool(VIP_Check_Activated))
-	{
-		CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
-		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarInt(VIP_Check_Time));
-	}
-	else PrintToServer("[VIP-Manager] Auto check disabled.");
+	SetCheckTimer();
 	
 	// Print log status
 	if(GetConVarBool(VIP_Log))
@@ -206,6 +205,16 @@ public Action:VIP_Check_Timer(Handle:timer)
 {
 	if(!VIP_Check(0)) return Plugin_Continue;
 	else return Plugin_Handled;
+}
+
+public OnCheckTimeChanged(Handle:cvar, String:oldVal[], String:newVal[])
+{
+	SetCheckTimer();
+}
+
+public OnCheckActivatedChanged(Handle:cvar, String:oldVal[], String:newVal[])
+{
+	SetCheckTimer();
 }
 
 public Action:VIP_Add(client, args)
@@ -720,6 +729,22 @@ FormatQuery(String:query[], maxlenght, String:steamID[], String:VIPname[], Strin
 	
 	// Replace VIP time
 	ReplaceString(query, maxlenght, "{time}", VIPtime, false);
+}
+
+SetCheckTimer()
+{
+	if(CheckTimer != INVALID_HANDLE)
+	{
+		KillTimer(CheckTimer);
+		CheckTimer = INVALID_HANDLE;
+	}
+	
+	if(GetConVarBool(VIP_Check_Activated))
+	{
+		CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarInt(VIP_Check_Time));
+	}
+	else PrintToServer("[VIP-Manager] Auto check disabled.");
 }
 
 bool:IsStringEmpty(String:str[])
