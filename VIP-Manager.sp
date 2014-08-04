@@ -76,34 +76,19 @@ public OnConfigsExecuted()
 public Action:VIP_Help(client, args)
 {
 	// Print all commands with syntax
-	if(client > 0)
-	{
-		// For client
-		PrintToChat(client, "vipm_help | Show this text.");
-		PrintToChat(client, "vipm_add <name> <days> [\"SteamID\"] | Adds a new VIP for give days.");
-		PrintToChat(client, "vipm_rm <name> | Remove a VIP.");
-		PrintToChat(client, "vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
-		PrintToChat(client, "vipm_check | Checks for outdated VIPs.");
-		PrintToChat(client, "[VIP-Manager] by %s (Version %s)", Author, Version);
-	}
-	else
-	{
-		// For server
-		PrintToServer("vipm_help | Show this text.");
-		PrintToServer("vipm_add <days> <\"name\"> [\"SteamID\"] | Adds a new VIP for give days.");
-		PrintToServer("vipm_rm <\"name\"> | Remove a VIP.");
-		PrintToServer("vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
-		PrintToServer("vipm_check | Checks for outdated VIPs.");
-		PrintToServer("[VIP-Manager] by %s (Version %s)", Author, Version);
-	}
+	ReplyToCommand(client, "vipm_help | Show this text.");
+	ReplyToCommand(client, "vipm_add <name> <days> [\"SteamID\"] | Adds a new VIP for give days.");
+	ReplyToCommand(client, "vipm_rm <name> | Remove a VIP.");
+	ReplyToCommand(client, "vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
+	ReplyToCommand(client, "vipm_check | Checks for outdated VIPs.");
+	ReplyToCommand(client, "[VIP-Manager] by %s (Version %s)", Author, Version);
 	
 	return Plugin_Handled;
 }
 
 VIP_Check(client)
 {
-	if(client > 0) PrintToChat(client, "[VIP-Manager] Starting VIP check!");
-	else PrintToServer("[VIP-Manager] Starting VIP check!");
+	ReplyToCommand(client, "[VIP-Manager] Starting VIP check!");
 	
 	// Create SQL connection
 	decl String:error[255] = "\0";
@@ -114,8 +99,7 @@ VIP_Check(client)
 	{
 		// Log error
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		ReplyToCommand(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return false;
 	}
@@ -133,8 +117,7 @@ VIP_Check(client)
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return false;
 		}
@@ -143,8 +126,7 @@ VIP_Check(client)
 			// Return if none VIP is oudated
 			if(SQL_GetRowCount(hQuery) == 0)
 			{
-				if(client > 0) PrintToChat(client, "[VIP-Manager] None VIPs are outdated!");
-				else PrintToServer("[VIP-Manager] None VIPs are outdated!");
+				ReplyToCommand(client, "[VIP-Manager] None VIPs are outdated!");
 				
 				return false;
 			}
@@ -155,8 +137,7 @@ VIP_Check(client)
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
 				if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-				else PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				ReplyToCommand(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
 				return false;
 			}
@@ -175,8 +156,7 @@ VIP_Check(client)
 					
 					// Log all oudated VIPs
 					if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-					if(client > 0) PrintToChat(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
-					else PrintToServer("[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
+					ReplyToCommand(client, "[VIP-Manager] VIP '%s' (steamid: %s) deleted. Reason: Time expired!", name, steamid);
 				}
 			}
 			
@@ -188,8 +168,7 @@ VIP_Check(client)
 		CloseHandle(connection);
 	}
 	
-	if(client > 0) PrintToChat(client, "[VIP-Manager] VIP check finished!");
-	else PrintToServer("[VIP-Manager] VIP check finished!");
+	ReplyToCommand(client, "[VIP-Manager] VIP check finished!");
 	
 	return true;
 }
@@ -222,8 +201,7 @@ public Action:VIP_Add(client, args)
 	// Check arguments count
 	if(args < 2)
 	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
-		else PrintToServer("[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
+		ReplyToCommand(client, "[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
 		
 		return Plugin_Continue;
 	}
@@ -240,8 +218,7 @@ public Action:VIP_Add(client, args)
 		GetCmdArg(3, SteamID, sizeof(SteamID));
 		if(!CheckSteamID(SteamID))
 		{
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXX)");
-			else PrintToServer("[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXX)");
+			ReplyToCommand(client, "[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXXXX)");
 			
 			return Plugin_Continue;
 		}
@@ -268,8 +245,7 @@ public Action:VIP_Add(client, args)
 			}
 			else if(i == MaxClients)
 			{
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't find player '%s'", Name);
-				else PrintToServer("[VIP-Manager] Can't find player '%s'", Name);
+				ReplyToCommand(client, "[VIP-Manager] Can't find player '%s'", Name);
 				
 				return Plugin_Continue;
 			}
@@ -284,8 +260,7 @@ public Action:VIP_Add(client, args)
 	{
 		// Log error
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		ReplyToCommand(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return Plugin_Continue;
 	}
@@ -303,8 +278,7 @@ public Action:VIP_Add(client, args)
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return Plugin_Continue;
 		}
@@ -315,8 +289,7 @@ public Action:VIP_Add(client, args)
 			
 			// Log new VIP
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
-			else PrintToServer("[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
+			ReplyToCommand(client, "[VIP-Manager] Added VIP '%s' (SteamID: %s) for %s days", Name, SteamID, days);
 		}
 		
 		// Close Query
@@ -334,8 +307,7 @@ public Action:VIP_Remove(client, args)
 	// Check arguments count
 	if(args < 1)
 	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_rm <\"name\">");
-		else PrintToServer("[VIP-Manager] Use vipm_rm <\"name\">");
+		ReplyToCommand(client, "[VIP-Manager] Use vipm_rm <\"name\">");
 		
 		return Plugin_Continue;
 	}
@@ -352,8 +324,7 @@ public Action:VIP_Remove(client, args)
 	{
 		// Log error
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-		else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+		ReplyToCommand(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		
 		return Plugin_Continue;
 	}
@@ -371,8 +342,7 @@ public Action:VIP_Remove(client, args)
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 			
 			return Plugin_Continue;
 		}
@@ -382,16 +352,14 @@ public Action:VIP_Remove(client, args)
 			if(SQL_GetRowCount(hQuery) > 1)
 			{
 				// Print error
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", Name);
-				else PrintToServer("[VIP-Manager] Found more than one VIP with the name like '%s'!", Name);
+				ReplyToCommand(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", Name);
 				
 				return Plugin_Continue;
 			}
 			else if(SQL_GetRowCount(hQuery) == 0)
 			{
 				// Print error
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", Name);
-				else PrintToServer("[VIP-Manager] Can't found VIP with the name like '%s'!", Name);
+				ReplyToCommand(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", Name);
 				
 				return Plugin_Continue;
 			}
@@ -408,8 +376,7 @@ public Action:VIP_Remove(client, args)
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
 				if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-				else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+				ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 				
 				return Plugin_Continue;
 			}
@@ -422,8 +389,7 @@ public Action:VIP_Remove(client, args)
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
 				if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
-				else PrintToServer("[VIP-Manager] Error while deleting VIPs! Error: %s", error);
+				ReplyToCommand(client, "[VIP-Manager] Error while deleting VIPs! Error: %s", error);
 			
 				return Plugin_Continue;
 			}
@@ -438,8 +404,7 @@ public Action:VIP_Remove(client, args)
 				else cName = "Server console";
 				
 				if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
-				else PrintToServer("[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
+				ReplyToCommand(client, "[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: Removed by %s!", Name, SteamID, cName);
 			}
 		}
 		
@@ -456,11 +421,7 @@ public Action:VIP_Remove(client, args)
 public Action:VIP_Change_Time(client, args)
 {
 	// Check arguments
-	if(args < 3)
-	{
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <time>");
-		else PrintToServer("[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <days>");
-	}
+	if(args < 3) ReplyToCommand(client, "[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <days>");
 	else
 	{
 		// Init variables
@@ -480,8 +441,7 @@ public Action:VIP_Change_Time(client, args)
 		else if(StrEqual(cMode, "sub", false)) Format(query, sizeof(query), "UPDATE sm_admins SET expirationday = expirationday - %s WHERE name LIKE '%s%s%s'", days, '%', name, '%');
 		else
 		{
-			if(client > 0) PrintToChat(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
-			else PrintToServer("[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
+			ReplyToCommand(client, "[VIP-Manager] No mode \"%s\" found. Available: set | add | sub", cMode);
 			
 			return Plugin_Continue;
 		}
@@ -494,8 +454,7 @@ public Action:VIP_Change_Time(client, args)
 		{
 			// Log error
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 			
 			return Plugin_Continue;
 		}
@@ -513,8 +472,7 @@ public Action:VIP_Change_Time(client, args)
 				// Log error
 				SQL_GetError(connection, error, sizeof(error));
 				if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-				if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-				else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+				ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 				
 				return Plugin_Continue;
 			}
@@ -524,16 +482,14 @@ public Action:VIP_Change_Time(client, args)
 				if(SQL_GetRowCount(hQuery) > 1)
 				{
 					// Print error
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", name);
-					else PrintToServer("[VIP-Manager] Found more than one VIP with the name like '%s'!", name);
+					ReplyToCommand(client, "[VIP-Manager] Found more than one VIP with the name like '%s'!", name);
 					
 					return Plugin_Continue;
 				}
 				else if(SQL_GetRowCount(hQuery) == 0)
 				{
 					// Print error
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", name);
-					else PrintToServer("[VIP-Manager] Can't found VIP with the name like '%s'!", name);
+					ReplyToCommand(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", name);
 					
 					return Plugin_Continue;
 				}
@@ -545,8 +501,7 @@ public Action:VIP_Change_Time(client, args)
 					// Log error
 					SQL_GetError(connection, error, sizeof(error));
 					if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-					else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+					ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 					
 					return Plugin_Continue;
 				}
@@ -557,8 +512,7 @@ public Action:VIP_Change_Time(client, args)
 					// Log error
 					SQL_GetError(connection, error, sizeof(error));
 					if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-					if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-					else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+					ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 					
 					return Plugin_Continue;
 				}
@@ -577,8 +531,7 @@ public Action:VIP_Change_Time(client, args)
 						// Log error
 						SQL_GetError(connection, error, sizeof(error));
 						if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-						if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-						else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+						ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 						
 						return Plugin_Continue;
 					}
@@ -595,17 +548,14 @@ public Action:VIP_Change_Time(client, args)
 							// Log error
 							SQL_GetError(connection, error, sizeof(error));
 							if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-							if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-							else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+							ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 							
 							return Plugin_Continue;
 						}
 						
 						// Log change
 						if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
-						
-						if(client > 0) PrintToChat(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
-						else PrintToServer("[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
+						ReplyToCommand(client, "[VIP-Manager] Changed time of %s (SteamID: %s) to %s days. Changed: %s %s days", name, steamID, nDays, cMode, days);
 					}
 				}
 			}
@@ -627,7 +577,7 @@ Execute_Custom_OnAdd_Queries(client, Handle:connection, String:steamID[], String
 	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnAdd.cfg";
 	if(!FileExists(queryFilePath))
 	{
-		PrintToServer("[VIP-Manager] Can't find file %s", queryFilePath);
+		ReplyToCommand(client, "[VIP-Manager] Can't find file %s", queryFilePath);
 		return;
 	}
 	
@@ -643,15 +593,14 @@ Execute_Custom_OnAdd_Queries(client, Handle:connection, String:steamID[], String
 		
 		if(IsStringEmpty(query))
 		{
-			PrintToServer("Query is empty!");
+			ReplyToCommand(client, "Query is empty!");
 			continue;
 		}
 		
 		FormatQuery(query, sizeof(query), steamID, VIPname, VIPtime);
 		
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
-		else PrintToServer("[VIP-Manager] Execute custom query: %s", query);
+		ReplyToCommand(client, "[VIP-Manager] Execute custom query: %s", query);
 		
 		hQuery = SQL_Query(connection, query);
 		
@@ -660,8 +609,7 @@ Execute_Custom_OnAdd_Queries(client, Handle:connection, String:steamID[], String
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 		}
 		else CloseHandle(hQuery);
 	}
@@ -675,7 +623,7 @@ Execute_Custom_OnRemove_Queries(client, Handle:connection, String:steamID[], Str
 	new String:queryFilePath[255] = "cfg/sourcemod/VIP-Manager-OnRemove.cfg";
 	if(!FileExists(queryFilePath))
 	{
-		PrintToServer("[VIP-Manager] Can't find file %s", queryFilePath);
+		ReplyToCommand(client, "[VIP-Manager] Can't find file %s", queryFilePath);
 		return;
 	}
 	
@@ -691,15 +639,14 @@ Execute_Custom_OnRemove_Queries(client, Handle:connection, String:steamID[], Str
 		
 		if(IsStringEmpty(query))
 		{
-			PrintToServer("Query is empty!");
+			ReplyToCommand(client, "Query is empty!");
 			continue;
 		}
 		
 		FormatQuery(query, sizeof(query), steamID, VIPname, "");
 		
 		if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Execute custom query: %s", query);
-		if(client > 0) PrintToChat(client, "[VIP-Manager] Execute custom query: %s", query);
-		else PrintToServer("[VIP-Manager] Execute custom query: %s", query);
+		ReplyToCommand(client, "[VIP-Manager] Execute custom query: %s", query);
 		
 		hQuery = SQL_Query(connection, query);
 		
@@ -708,8 +655,7 @@ Execute_Custom_OnRemove_Queries(client, Handle:connection, String:steamID[], Str
 			// Log error
 			SQL_GetError(connection, error, sizeof(error));
 			if(GetConVarBool(VIP_Log)) LogToFileEx(logFilePath, "[VIP-Manager] Error on Query! Error: %s", error);
-			if(client > 0) PrintToChat(client, "[VIP-Manager] Error on Query! Error: %s", error);
-			else PrintToServer("[VIP-Manager] Error on Query! Error: %s", error);
+			ReplyToCommand(client, "[VIP-Manager] Error on Query! Error: %s", error);
 		}
 		else CloseHandle(hQuery);
 	}
