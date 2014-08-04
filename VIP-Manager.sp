@@ -695,8 +695,7 @@ SetCheckTimer()
 
 bool:IsStringEmpty(String:str[])
 {
-	// todo make this works
-	return !str[0];
+	return StrEqual(str, "");
 }
 
 bool:CheckSteamID(String:steamID[])
