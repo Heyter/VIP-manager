@@ -175,15 +175,15 @@ VIP_Check(client)
 
 public Action:VIP_Check_Cmd(client, args)
 {
-  if(!VIP_Check(client)) return Plugin_Continue;
-  else return Plugin_Handled;
+	VIP_Check(client);
+	return Plugin_Continue;
 }
 
 // Checking for outdated VIPs
 public Action:VIP_Check_Timer(Handle:timer)
 {
-	if(!VIP_Check(0)) return Plugin_Continue;
-	else return Plugin_Handled;
+	VIP_Check(0);
+	return Plugin_Continue;
 }
 
 public OnCheckTimeChanged(Handle:cvar, String:oldVal[], String:newVal[])
