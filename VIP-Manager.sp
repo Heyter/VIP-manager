@@ -218,7 +218,7 @@ public Action:VIP_Add(client, args)
 		GetCmdArg(3, SteamID, sizeof(SteamID));
 		if(!CheckSteamID(SteamID))
 		{
-			ReplyToCommand(client, "[VIP-Manager] Please use valid SteamID format (STEAM_X:X:XXXXXXXX)");
+			ReplyToCommand(client, "[VIP-Manager] Please use valid SteamID format");
 			
 			return Plugin_Continue;
 		}
@@ -702,5 +702,8 @@ bool:CheckSteamID(String:steamID[])
 {	
 	return (strncmp(steamID, "STEAM_", 6, false) == 0 &&
 			steamID[7] == ':' &&
-			steamID[9] == ':');
+			steamID[9] == ':')
+			||
+			(strncmp(steamID, "[U:1:", 5, false) == 0 &&
+			StrContains(steamID, "]", false) > 5);
 }
