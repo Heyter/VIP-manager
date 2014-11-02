@@ -27,8 +27,8 @@ public OnPluginStart()
 	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs", FCVAR_NONE, true, 1.0);
 	VIP_Log = CreateConVar("vipm_log", "0", "Activate logging. Logs all added and removed VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
 
-	HookConVarChange(VIP_Check_Activated, OnCheckActivatedChanged);
-	HookConVarChange(VIP_Check_Time, OnCheckTimeChanged);
+	HookConVarChange(VIP_Check_Activated, OnCVarChanged);
+	HookConVarChange(VIP_Check_Time, OnCVarChanged);
 
 	// Register all commands
 	RegAdminCmd("vipm_help", VIP_Help, ADMFLAG_ROOT, "Show a list of commands");
@@ -159,12 +159,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 	return Plugin_Handled;
 }
 
-public OnCheckTimeChanged(Handle:cvar, String:oldVal[], String:newVal[])
-{
-	SetCheckTimer();
-}
-
-public OnCheckActivatedChanged(Handle:cvar, String:oldVal[], String:newVal[])
+public OnCVarChanged(Handle:cvar, String:oldVal[], String:newVal[])
 {
 	SetCheckTimer();
 }
