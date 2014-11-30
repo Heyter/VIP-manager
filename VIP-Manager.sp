@@ -12,7 +12,6 @@ public Plugin:myinfo =
 	url = "http://cf-server.pfweb.eu"
 };
 
-// CVars
 new Handle:VIP_Check_Activated = INVALID_HANDLE;
 new Handle:VIP_Check_Time = INVALID_HANDLE;
 new Handle:VIP_Log = INVALID_HANDLE;
@@ -22,7 +21,6 @@ new String:logFilePath[512];
 
 public OnPluginStart()
 {
-	// Init CVars
 	VIP_Check_Activated = CreateConVar("vipm_check_activated", "1", "Activating checking for outdated VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
 	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs", FCVAR_NONE, true, 1.0);
 	VIP_Log = CreateConVar("vipm_log", "0", "Activate logging. Logs all added and removed VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
@@ -30,7 +28,6 @@ public OnPluginStart()
 	HookConVarChange(VIP_Check_Activated, OnCVarChanged);
 	HookConVarChange(VIP_Check_Time, OnCVarChanged);
 
-	// Register all commands
 	RegAdminCmd("vipm_help", VIP_Help, ADMFLAG_ROOT, "Show a list of commands");
 	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
@@ -45,7 +42,6 @@ public OnConfigsExecuted()
 {
 	SetCheckTimer();
 
-	// Print log status
 	if(GetConVarBool(VIP_Log))
 	{
 		PrintToServer("[VIP-Manager] Logging enabled.");
@@ -102,8 +98,10 @@ VIP_Check(client)
 		SQL_FetchString(hQuery, 0, name, sizeof(name));
 		SQL_FetchString(hQuery, 1, steamID, sizeof(steamID));
 
-		RemoveVIP(connection, name, steamID, "Time expired");
-		ReplyToCommand(client, "[VIP-Manager] VIP '%s' deleted.", name);
+		if(!RemoveVIP(connection, name, steamID, "Time expired"))
+			ReplyToCommand(client, "[VIP-Manager] An error occurred while removing VIP '%s'! Please check the logs.", name);
+		else
+			ReplyToCommand(client, "[VIP-Manager] VIP '%s' deleted.", name);
 	}
 	
 	CloseHandle(hQuery);
@@ -131,7 +129,7 @@ public OnCVarChanged(Handle:cvar, String:oldVal[], String:newVal[])
 
 public Action:VIP_Add(client, args)
 {
-	if(args < 2)
+	if(args < 2 || args > 3)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Use vipm_add <\"name\"> <days> [\"SteamID\"]");
 		return Plugin_Handled;
@@ -176,11 +174,9 @@ public Action:VIP_Add(client, args)
 	}
 	
 	if(!AddVIP(connection, cName, steamID, days))
-	{
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while adding the VIP! Please check the logs.");
-		return Plugin_Handled;
-	}
-	ReplyToCommand(client, "[VIP-Manager] Added '%s' as VIP for %i days", cName, days);
+	else
+		ReplyToCommand(client, "[VIP-Manager] Added '%s' as VIP for %i days", cName, days);
 	
 	CloseHandle(connection);
 	return Plugin_Handled;
@@ -188,7 +184,7 @@ public Action:VIP_Add(client, args)
 
 public Action:VIP_Remove(client, args)
 {
-	if(args < 1)
+	if(args != 1)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Use vipm_rm <\"name\">");
 		return Plugin_Handled;
@@ -229,7 +225,10 @@ public Action:VIP_Remove(client, args)
 	decl String:reason[512];
 	Format(reason, sizeof(reason), "Removed by '%s'", uName);
 	
-	RemoveVIP(connection, cName, steamID, reason);
+	if(!RemoveVIP(connection, cName, steamID, reason))
+		ReplyToCommand(client, "[VIP-Manager] An error occurred while removing VIP '%s'! Please check the logs.", cName);
+	else
+		ReplyToCommand(client, "[VIP-Manager] VIP '%s' deleted.", cName);
 	
 	CloseHandle(connection);
 	return Plugin_Handled;
@@ -237,7 +236,7 @@ public Action:VIP_Remove(client, args)
 
 public Action:VIP_Change_Time(client, args)
 {
-	if(args < 3)
+	if(args != 3)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <days>");
 		return Plugin_Handled;
@@ -275,7 +274,6 @@ public Action:VIP_Change_Time(client, args)
 		return Plugin_Handled;
 	}
 	
-	PrintToServer("Found VIP: Name: %s \nSteamID: %s", cName, steamID);
 	oldDays = GetVIPTime(connection, steamID);
 	if(oldDays == -2)
 	{
@@ -315,12 +313,9 @@ public Action:VIP_Change_Time(client, args)
 	}
 	
 	if(!SetVIPTime(connection, cName, steamID, oldDays, newDays))
-	{
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while changing time from VIP! Please check the logs.");
-		return Plugin_Handled;
-	}
-
-	ReplyToCommand(client, "Changed time of '%s' from %i to %i days", cName, oldDays, newDays);
+	else
+		ReplyToCommand(client, "Changed time of '%s' from %i to %i days", cName, oldDays, newDays);
 	
 	CloseHandle(connection);
 	return Plugin_Handled;
@@ -349,7 +344,7 @@ ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const Stri
 			continue;
 
 		FormatQuery(query, sizeof(query), steamID, name, days);
-		if(SQL_SendFastQuery(connection, query))
+		if(!SQL_SendFastQuery(connection, query))
 			LogMessageToFile("[VIP-Manager] Executed custom query: %s", query);
 	}
 
@@ -376,12 +371,14 @@ SetCheckTimer()
 		CheckTimer = INVALID_HANDLE;
 	}
 
-	if(GetConVarBool(VIP_Check_Activated))
+	if(!GetConVarBool(VIP_Check_Activated))
 	{
-		CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
-		PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minutes.", GetConVarInt(VIP_Check_Time));
+		PrintToServer("[VIP-Manager] Auto check disabled.");
+		return;
 	}
-	else PrintToServer("[VIP-Manager] Auto check disabled.");
+	
+	CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
+	PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minute(s).", GetConVarInt(VIP_Check_Time));
 }
 
 bool:IsStringEmpty(const String:str[])
@@ -486,6 +483,7 @@ GetVIPTime(Handle:connection, const String:steamID[])
 		decl String:error[255];
 		SQL_GetError(connection, error, sizeof(error));
 		LogMessageToFile("[VIP-Manager] An error occurred while fetching sql row! Error: %s", error);
+		return -2;
 	}
 	new days = SQL_FetchInt(hQuery, 0);
 	
@@ -502,7 +500,6 @@ bool:SetVIPTime(Handle:connection, const String:name[], const String:steamID[], 
 		return false;
 	
 	LogMessageToFile("[VIP-Manager] Changed time for VIP '%s' (SteamID: %s) from %i to %i!", name, steamID, oldDays, newDays);
-	
 	return true;
 }
 
@@ -532,7 +529,6 @@ Handle:SQL_SendQuery(Handle:connection, const String:query[])
 		return INVALID_HANDLE;
 	
 	new Handle:hQuery = SQL_Query(connection, query);
-	
 	if(hQuery == INVALID_HANDLE)
 	{
 		decl String:error[255];
