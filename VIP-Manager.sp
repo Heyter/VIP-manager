@@ -344,7 +344,7 @@ ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const Stri
 			continue;
 
 		FormatQuery(query, sizeof(query), steamID, name, days);
-		if(!SQL_SendFastQuery(connection, query))
+		if(SQL_SendFastQuery(connection, query))
 			LogMessageToFile("[VIP-Manager] Executed custom query: %s", query);
 	}
 
