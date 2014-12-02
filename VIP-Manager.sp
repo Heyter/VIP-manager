@@ -15,15 +15,18 @@ public Plugin:myinfo =
 new Handle:VIP_Check_Activated = INVALID_HANDLE;
 new Handle:VIP_Check_Time = INVALID_HANDLE;
 new Handle:VIP_Log = INVALID_HANDLE;
+new Handle:VIP_Flags = INVALID_HANDLE;
 
 new Handle:CheckTimer = INVALID_HANDLE;
 new String:logFilePath[512];
+new String:flagsForVIP[16];
 
 public OnPluginStart()
 {
 	VIP_Check_Activated = CreateConVar("vipm_check_activated", "1", "Activating checking for outdated VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
 	VIP_Check_Time = CreateConVar("vipm_check_time", "720", "Time duration, in minutes, to check for outdated VIPs", FCVAR_NONE, true, 1.0);
 	VIP_Log = CreateConVar("vipm_log", "0", "Activate logging. Logs all added and removed VIPs", FCVAR_NONE, true, 0.0, true, 1.0);
+	VIP_Flags = CreateConVar("vipm_flags", "a", "The admin flag used for a VIP", FCVAR_NONE);
 
 	HookConVarChange(VIP_Check_Activated, OnCVarChanged);
 	HookConVarChange(VIP_Check_Time, OnCVarChanged);
@@ -75,7 +78,7 @@ VIP_Check(client)
 	}
 	
 	decl String:query[255];
-	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL days DAY), NOW()) < 0 AND days >= 0 AND flags = 'a'");
+	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL days DAY), NOW()) < 0 AND days >= 0 AND flags = '%s'", flagsForVIP);
 	
 	new Handle:hQuery = SQL_SendQuery(connection, query);
 	if(hQuery == INVALID_HANDLE)
@@ -125,6 +128,7 @@ public Action:VIP_Check_Timer(Handle:timer)
 public OnCVarChanged(Handle:cvar, String:oldVal[], String:newVal[])
 {
 	SetCheckTimer();
+	GetConVarString(VIP_Flags, flagsForVIP, sizeof(flagsForVIP));
 }
 
 public Action:VIP_Add(client, args)
@@ -417,7 +421,7 @@ bool:SearchPlayerByName(const String:sName[], String:cName[], nameLength, String
 bool:AddVIP(Handle:connection, const String:name[], const String:steamID[], days)
 {
 	decl String:query[255];
-	Format(query, sizeof(query), "INSERT INTO sm_admins (authtype, identity, flags, name, days) VALUES ('steam', '%s', 'a', '%s', %i)", steamID, name, days);
+	Format(query, sizeof(query), "INSERT INTO sm_admins (authtype, identity, flags, name, days) VALUES ('steam', '%s', '%s', '%s', %i)", steamID, flagsForVIP, name, days);
 	
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
@@ -431,7 +435,7 @@ bool:AddVIP(Handle:connection, const String:name[], const String:steamID[], days
 bool:RemoveVIP(Handle:connection, const String:name[], const String:steamID[], const String:reason[])
 {
 	decl String:query[255];
-	Format(query, sizeof(query), "DELETE FROM sm_admins WHERE identity = '%s' AND flags = 'a'", steamID);
+	Format(query, sizeof(query), "DELETE FROM sm_admins WHERE identity = '%s'", steamID);
 	
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
@@ -445,7 +449,7 @@ bool:RemoveVIP(Handle:connection, const String:name[], const String:steamID[], c
 GetVIP(Handle:connection, const String:searchName[], String:cName[], nameLength, String:steamID[], IdLength)
 {
 	decl String:query[255];
-	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE name LIKE '%s%s%s' AND flags = 'a'", '%', searchName, '%');
+	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE name LIKE '%s%s%s' AND flags = '%s'", '%', searchName, '%', flagsForVIP);
 	
 	new Handle:hQuery = SQL_SendQuery(connection, query);
 	if(hQuery == INVALID_HANDLE)
