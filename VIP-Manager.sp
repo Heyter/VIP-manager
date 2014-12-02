@@ -34,8 +34,8 @@ public OnPluginStart()
 	RegAdminCmd("vipm_help", VIP_Help, ADMFLAG_ROOT, "Show a list of commands");
 	//RegAdminCmd("vipm", VIP_Manager_Menu, ADMFLAG_ROOT, "Show the VIP-Manager menu");
 	RegAdminCmd("vipm_add", VIP_Add, ADMFLAG_ROOT, "Add a VIP");
-	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Delete a VIP");
-	RegAdminCmd("vipm_time", VIP_Change_Time, ADMFLAG_ROOT, "Change time of a VIP");
+	RegAdminCmd("vipm_rm", VIP_Remove, ADMFLAG_ROOT, "Remove a VIP");
+	RegAdminCmd("vipm_days", VIP_Change_Days, ADMFLAG_ROOT, "Change the days of a VIP");
 	RegAdminCmd("vipm_check", VIP_Check_Cmd, ADMFLAG_ROOT, "Checks for oudated VIPs");
 
 	AutoExecConfig(true, "VIP-Manager");
@@ -59,7 +59,7 @@ public Action:VIP_Help(client, args)
 	ReplyToCommand(client, "vipm_help | Show this text.");
 	ReplyToCommand(client, "vipm_add <name> <days> [\"SteamID\"] | Adds a new VIP for give days.");
 	ReplyToCommand(client, "vipm_rm <name> | Remove a VIP.");
-	ReplyToCommand(client, "vipm_time <set|add|sub> <\"name\"> <time> | Change time of a VIP.");
+	ReplyToCommand(client, "vipm_days <set|add|sub> <\"name\"> <time> | Change the days of a VIP.");
 	ReplyToCommand(client, "vipm_check | Checks for outdated VIPs.");
 	ReplyToCommand(client, "[VIP-Manager] by %s (Version %s)", Author, Version);
 
@@ -238,11 +238,11 @@ public Action:VIP_Remove(client, args)
 	return Plugin_Handled;
 }
 
-public Action:VIP_Change_Time(client, args)
+public Action:VIP_Change_Days(client, args)
 {
 	if(args != 3)
 	{
-		ReplyToCommand(client, "[VIP-Manager] Use vipm_time <set|add|sub> <\"name\"> <days>");
+		ReplyToCommand(client, "[VIP-Manager] Use vipm_days <set|add|sub> <\"name\"> <days>");
 		return Plugin_Handled;
 	}
 	
@@ -278,10 +278,10 @@ public Action:VIP_Change_Time(client, args)
 		return Plugin_Handled;
 	}
 	
-	oldDays = GetVIPTime(connection, steamID);
+	oldDays = GetVIPDays(connection, steamID);
 	if(oldDays == -2)
 	{
-		ReplyToCommand(client, "[VIP-Manager] An error occurred while getting time from VIP! Please check the logs.");
+		ReplyToCommand(client, "[VIP-Manager] An error occurred while getting days from VIP! Please check the logs.");
 		return Plugin_Handled;
 	}
 
@@ -316,16 +316,16 @@ public Action:VIP_Change_Time(client, args)
 		return Plugin_Handled;
 	}
 	
-	if(!SetVIPTime(connection, cName, steamID, oldDays, newDays))
-		ReplyToCommand(client, "[VIP-Manager] An error occurred while changing time from VIP! Please check the logs.");
+	if(!SetVIPDays(connection, cName, steamID, oldDays, newDays))
+		ReplyToCommand(client, "[VIP-Manager] An error occurred while changing days for VIP! Please check the logs.");
 	else
-		ReplyToCommand(client, "Changed time of '%s' from %i to %i days", cName, oldDays, newDays);
+		ReplyToCommand(client, "Changed days of '%s' from %i to %i", cName, oldDays, newDays);
 	
 	CloseHandle(connection);
 	return Plugin_Handled;
 }
 
-ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const String:steamID[], const String:name[], days)
+ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const String:steamID[], const String:name[], days, oldDays = 0)
 {
 	if(!FileExists(queryFilePath))
 	{
@@ -347,7 +347,7 @@ ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const Stri
 		if(IsStringEmpty(query))
 			continue;
 
-		FormatQuery(query, sizeof(query), steamID, name, days);
+		FormatQuery(query, sizeof(query), steamID, name, days, oldDays);
 		if(SQL_SendFastQuery(connection, query))
 			LogMessageToFile("[VIP-Manager] Executed custom query: %s", query);
 	}
@@ -355,7 +355,7 @@ ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const Stri
 	CloseHandle(queryFile);
 }
 
-FormatQuery(String:query[], maxlenght, const String:steamID[], const String:name[], days)
+FormatQuery(String:query[], maxlenght, const String:steamID[], const String:name[], days, oldDays)
 {
 	TrimString(query);
 
@@ -364,7 +364,11 @@ FormatQuery(String:query[], maxlenght, const String:steamID[], const String:name
 	
 	decl String:strDays[16];
 	IntToString(days, strDays, sizeof(strDays));
-	ReplaceString(query, maxlenght, "{time}", strDays, false);
+	ReplaceString(query, maxlenght, "{days}", strDays, false);
+	
+	decl String:strOldDays[16];
+	IntToString(oldDays, strOldDays, sizeof(strOldDays));
+	ReplaceString(query, maxlenght, "{oldDays}", strOldDays, false);
 }
 
 SetCheckTimer()
@@ -473,7 +477,7 @@ GetVIP(Handle:connection, const String:searchName[], String:cName[], nameLength,
 	return 1;
 }
 
-GetVIPTime(Handle:connection, const String:steamID[])
+GetVIPDays(Handle:connection, const String:steamID[])
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "SELECT days FROM sm_admins WHERE identity = '%s'", steamID);
@@ -495,7 +499,7 @@ GetVIPTime(Handle:connection, const String:steamID[])
 	return days;
 }
 
-bool:SetVIPTime(Handle:connection, const String:name[], const String:steamID[], oldDays, newDays)
+bool:SetVIPDays(Handle:connection, const String:name[], const String:steamID[], oldDays, newDays)
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "UPDATE sm_admins SET days = %i WHERE identity = '%s'", newDays, steamID);
@@ -503,7 +507,8 @@ bool:SetVIPTime(Handle:connection, const String:name[], const String:steamID[], 
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
 	
-	LogMessageToFile("[VIP-Manager] Changed time for VIP '%s' (SteamID: %s) from %i to %i!", name, steamID, oldDays, newDays);
+	ExecuteCustomQueries("cfg/sourcemod/VIP-Manager-OnDaysChange.cfg", connection, steamID, name, newDays, oldDays);
+	LogMessageToFile("[VIP-Manager] Changed days for VIP '%s' (SteamID: %s) from %i to %i!", name, steamID, oldDays, newDays);
 	return true;
 }
 
