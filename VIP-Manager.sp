@@ -84,12 +84,15 @@ VIP_Check(client)
 	if(hQuery == INVALID_HANDLE)
 	{
 		ReplyToCommand(client, "[VIP-Manager] There's a problem with the VIP-check query! Please check the logs.");
+		CloseHandle(connection);
 		return;
 	}
 	
 	if(SQL_GetRowCount(hQuery) == 0)
 	{
 		ReplyToCommand(client, "[VIP-Manager] None VIPs are outdated!");
+		CloseHandle(hQuery);
+		CloseHandle(connection);
 		return;
 	}
 
@@ -211,16 +214,19 @@ public Action:VIP_Remove(client, args)
 	if(vipCount > 1)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Found more than one VIP with a name like '%s'!", searchName);
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 	else if(vipCount == 0)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", searchName);
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 	else if(vipCount == -1)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Unknown error! Please check the logs.");
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 
@@ -270,11 +276,13 @@ public Action:VIP_Change_Days(client, args)
 	if(vipCount > 1)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Found more than one VIP with a name like '%s'!", searchName);
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 	else if(vipCount == 0)
 	{
 		ReplyToCommand(client, "[VIP-Manager] Can't found VIP with the name like '%s'!", searchName);
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 	
@@ -282,6 +290,7 @@ public Action:VIP_Change_Days(client, args)
 	if(oldDays == -2)
 	{
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while getting days from VIP! Please check the logs.");
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 
@@ -295,6 +304,7 @@ public Action:VIP_Change_Days(client, args)
 		if(newDays < 0)
 		{
 			ReplyToCommand(client, "[VIP-Manager] Can't add negative days! Use mode 'sub' instead.");
+			CloseHandle(connection);
 			return Plugin_Handled;
 		}
 		newDays += oldDays;
@@ -304,6 +314,7 @@ public Action:VIP_Change_Days(client, args)
 		if(newDays < 0)
 		{
 			ReplyToCommand(client, "[VIP-Manager] Can't subtract negative days! Use mode 'add' instead.");
+			CloseHandle(connection);
 			return Plugin_Handled;
 		}
 		newDays = oldDays - newDays;
@@ -313,6 +324,7 @@ public Action:VIP_Change_Days(client, args)
 	else
 	{
 		ReplyToCommand(client, "[VIP-Manager] Unknown mode '%s'. Please use 'set', 'add' or 'sub'", cMode);
+		CloseHandle(connection);
 		return Plugin_Handled;
 	}
 	
@@ -461,7 +473,10 @@ GetVIP(Handle:connection, const String:searchName[], String:cName[], nameLength,
 	
 	new rowCount = SQL_GetRowCount(hQuery);
 	if(rowCount != 1)
+	{
+		CloseHandle(hQuery);
 		return rowCount;
+	}
 	
 	if(!SQL_FetchRow(hQuery))
 	{
@@ -491,6 +506,7 @@ GetVIPDays(Handle:connection, const String:steamID[])
 		decl String:error[255];
 		SQL_GetError(connection, error, sizeof(error));
 		LogMessageToFile("[VIP-Manager] An error occurred while fetching sql row! Error: %s", error);
+		CloseHandle(hQuery);
 		return -2;
 	}
 	new days = SQL_FetchInt(hQuery, 0);
