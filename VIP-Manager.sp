@@ -69,17 +69,17 @@ public Action:VIP_Help(client, args)
 VIP_Check(client)
 {
 	ReplyToCommand(client, "[VIP-Manager] Starting VIP check!");
-	
+
 	new Handle:connection = SQL_ConnectToServer();
 	if(connection == INVALID_HANDLE)
 	{
 		ReplyToCommand(client, "[VIP-Manager] There's a problem with the SQL connection! Please check the logs.");
 		return;
 	}
-	
+
 	decl String:query[255];
 	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL days DAY), NOW()) < 0 AND days >= 0 AND flags = '%s'", flagsForVIP);
-	
+
 	new Handle:hQuery = SQL_SendQuery(connection, query);
 	if(hQuery == INVALID_HANDLE)
 	{
@@ -87,7 +87,7 @@ VIP_Check(client)
 		CloseHandle(connection);
 		return;
 	}
-	
+
 	if(SQL_GetRowCount(hQuery) == 0)
 	{
 		ReplyToCommand(client, "[VIP-Manager] None VIPs are outdated!");
@@ -109,7 +109,7 @@ VIP_Check(client)
 		else
 			ReplyToCommand(client, "[VIP-Manager] VIP '%s' deleted.", name);
 	}
-	
+
 	CloseHandle(hQuery);
 	CloseHandle(connection);
 }
@@ -153,7 +153,7 @@ public Action:VIP_Add(client, args)
 	days = StringToInt(daysBuffer);
 	if(days < -1)
 		days = -1;
-	
+
 	if(args == 3)
 	{
 		strcopy(cName, sizeof(cName), searchName);
@@ -179,12 +179,12 @@ public Action:VIP_Add(client, args)
 		ReplyToCommand(client, "[VIP-Manager] There's a problem with the SQL connection! Please check the logs.");
 		return Plugin_Handled;
 	}
-	
+
 	if(!AddVIP(connection, cName, steamID, days))
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while adding the VIP! Please check the logs.");
 	else
 		ReplyToCommand(client, "[VIP-Manager] Added '%s' as VIP for %i days", cName, days);
-	
+
 	CloseHandle(connection);
 	return Plugin_Handled;
 }
@@ -200,16 +200,16 @@ public Action:VIP_Remove(client, args)
 	decl String:searchName[255];
 	decl String:cName[255];
 	decl String:steamID[255];
-	
+
 	GetCmdArg(1, searchName, sizeof(searchName));
-	
+
 	new Handle:connection = SQL_ConnectToServer();
 	if(connection == INVALID_HANDLE)
 	{
 		ReplyToCommand(client, "[VIP-Manager] There's a problem with the SQL connection! Please check the logs.");
 		return Plugin_Handled;
 	}
-	
+
 	new vipCount = GetVIP(connection, searchName, cName, sizeof(cName), steamID, sizeof(steamID));
 	if(vipCount > 1)
 	{
@@ -234,12 +234,12 @@ public Action:VIP_Remove(client, args)
 	GetClientName(client, uName, sizeof(uName));
 	decl String:reason[512];
 	Format(reason, sizeof(reason), "Removed by '%s'", uName);
-	
+
 	if(!RemoveVIP(connection, cName, steamID, reason))
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while removing VIP '%s'! Please check the logs.", cName);
 	else
 		ReplyToCommand(client, "[VIP-Manager] VIP '%s' deleted.", cName);
-	
+
 	CloseHandle(connection);
 	return Plugin_Handled;
 }
@@ -251,7 +251,7 @@ public Action:VIP_Change_Days(client, args)
 		ReplyToCommand(client, "[VIP-Manager] Use vipm_days <set|add|sub> <\"name\"> <days>");
 		return Plugin_Handled;
 	}
-	
+
 	decl String:searchName[255];
 	decl String:cName[255];
 	decl String:steamID[255];
@@ -264,7 +264,7 @@ public Action:VIP_Change_Days(client, args)
 	GetCmdArg(2, searchName, sizeof(searchName));
 	GetCmdArg(3, daysBuffer, sizeof(daysBuffer));
 	newDays = StringToInt(daysBuffer);
-	
+
 	new Handle:connection = SQL_ConnectToServer();
 	if(connection == INVALID_HANDLE)
 	{
@@ -285,7 +285,7 @@ public Action:VIP_Change_Days(client, args)
 		CloseHandle(connection);
 		return Plugin_Handled;
 	}
-	
+
 	oldDays = GetVIPDays(connection, steamID);
 	if(oldDays == -2)
 	{
@@ -327,12 +327,12 @@ public Action:VIP_Change_Days(client, args)
 		CloseHandle(connection);
 		return Plugin_Handled;
 	}
-	
+
 	if(!SetVIPDays(connection, cName, steamID, oldDays, newDays))
 		ReplyToCommand(client, "[VIP-Manager] An error occurred while changing days for VIP! Please check the logs.");
 	else
 		ReplyToCommand(client, "Changed days of '%s' from %i to %i", cName, oldDays, newDays);
-	
+
 	CloseHandle(connection);
 	return Plugin_Handled;
 }
@@ -351,7 +351,7 @@ ExecuteCustomQueries(const String:queryFilePath[], Handle:connection, const Stri
 		LogMessageToFile("[VIP-Manager] Can't open file '%s'. Please check if file has set read permission.", queryFilePath);
 		return;
 	}
-	
+
 	decl String:query[1024];
 	while(!IsEndOfFile(queryFile))
 	{
@@ -373,11 +373,11 @@ FormatQuery(String:query[], maxlenght, const String:steamID[], const String:name
 
 	ReplaceString(query, maxlenght, "{steamid}", steamID, false);
 	ReplaceString(query, maxlenght, "{name}", name, false);
-	
+
 	decl String:strDays[16];
 	IntToString(days, strDays, sizeof(strDays));
 	ReplaceString(query, maxlenght, "{days}", strDays, false);
-	
+
 	decl String:strOldDays[16];
 	IntToString(oldDays, strOldDays, sizeof(strOldDays));
 	ReplaceString(query, maxlenght, "{oldDays}", strOldDays, false);
@@ -396,7 +396,7 @@ SetCheckTimer()
 		PrintToServer("[VIP-Manager] Auto check disabled.");
 		return;
 	}
-	
+
 	CheckTimer = CreateTimer(GetConVarFloat(VIP_Check_Time) * 60.0, VIP_Check_Timer, INVALID_HANDLE, TIMER_REPEAT);
 	PrintToServer("[VIP-Manager] Will check for expired VIPs every %i minute(s).", GetConVarInt(VIP_Check_Time));
 }
@@ -422,15 +422,15 @@ bool:SearchPlayerByName(const String:sName[], String:cName[], nameLength, String
 	{
 		if(!IsClientConnected(i))
 			continue;
-		
+
 		GetClientName(i, cName, nameLength);
 		if(StrContains(cName, sName, false) >= 0)
 			continue;
-		
+
 		GetClientAuthString(i, steamID, IdLength);
 		return true;
 	}
-	
+
 	return false;
 }
 
@@ -438,13 +438,13 @@ bool:AddVIP(Handle:connection, const String:name[], const String:steamID[], days
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "INSERT INTO sm_admins (authtype, identity, flags, name, days) VALUES ('steam', '%s', '%s', '%s', %i)", steamID, flagsForVIP, name, days);
-	
+
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
-	
+
 	ExecuteCustomQueries("cfg/sourcemod/VIP-Manager-OnAdd.cfg", connection, steamID, name, days);
 	LogMessageToFile("[VIP-Manager] Added VIP '%s' (SteamID: %s) for %i days", name, steamID, days);
-	
+
 	return true;
 }
 
@@ -452,13 +452,13 @@ bool:RemoveVIP(Handle:connection, const String:name[], const String:steamID[], c
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "DELETE FROM sm_admins WHERE identity = '%s'", steamID);
-	
+
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
-	
+
 	ExecuteCustomQueries("cfg/sourcemod/VIP-Manager-OnRemove.cfg", connection, steamID, name, 0);
 	LogMessageToFile("[VIP-Manager] Deleted VIP '%s' (SteamID: %s). Reason: %s!", name, steamID, reason);
-	
+
 	return true;
 }
 
@@ -466,28 +466,28 @@ GetVIP(Handle:connection, const String:searchName[], String:cName[], nameLength,
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "SELECT name, identity FROM sm_admins WHERE name LIKE '%s%s%s' AND flags = '%s'", '%', searchName, '%', flagsForVIP);
-	
+
 	new Handle:hQuery = SQL_SendQuery(connection, query);
 	if(hQuery == INVALID_HANDLE)
 		return -1;
-	
+
 	new rowCount = SQL_GetRowCount(hQuery);
 	if(rowCount != 1)
 	{
 		CloseHandle(hQuery);
 		return rowCount;
 	}
-	
+
 	if(!SQL_FetchRow(hQuery))
 	{
 		decl String:error[255];
 		SQL_GetError(connection, error, sizeof(error));
 		LogMessageToFile("[VIP-Manager] An error occurred while fetching sql row! Error: %s", error);
 	}
-	
+
 	SQL_FetchString(hQuery, 0, cName, nameLength);
 	SQL_FetchString(hQuery, 1, steamID, IdLength);
-	
+
 	CloseHandle(hQuery);
 	return 1;
 }
@@ -496,11 +496,11 @@ GetVIPDays(Handle:connection, const String:steamID[])
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "SELECT days FROM sm_admins WHERE identity = '%s'", steamID);
-	
+
 	new Handle:hQuery = SQL_SendQuery(connection, query);
 	if(hQuery == INVALID_HANDLE)
 		return -2;
-	
+
 	if(!SQL_FetchRow(hQuery))
 	{
 		decl String:error[255];
@@ -510,7 +510,7 @@ GetVIPDays(Handle:connection, const String:steamID[])
 		return -2;
 	}
 	new days = SQL_FetchInt(hQuery, 0);
-	
+
 	CloseHandle(hQuery);
 	return days;
 }
@@ -519,10 +519,10 @@ bool:SetVIPDays(Handle:connection, const String:name[], const String:steamID[], 
 {
 	decl String:query[255];
 	Format(query, sizeof(query), "UPDATE sm_admins SET days = %i WHERE identity = '%s'", newDays, steamID);
-	
+
 	if(!SQL_SendFastQuery(connection, query))
 		return false;
-	
+
 	ExecuteCustomQueries("cfg/sourcemod/VIP-Manager-OnDaysChange.cfg", connection, steamID, name, newDays, oldDays);
 	LogMessageToFile("[VIP-Manager] Changed days for VIP '%s' (SteamID: %s) from %i to %i!", name, steamID, oldDays, newDays);
 	return true;
@@ -535,7 +535,7 @@ Handle:SQL_ConnectToServer()
 		LogMessageToFile("[VIP-Manager] Missing SQL configuration! Please check your databases.cfg");
 		return INVALID_HANDLE;
 	}
-	
+
 	decl String:error[255];
 	new Handle:connection = SQL_Connect("vip-manager", true, error, sizeof(error));
 
@@ -544,7 +544,7 @@ Handle:SQL_ConnectToServer()
 		LogMessageToFile("[VIP-Manager] Couldn't connect to SQL server! Error: %s", error);
 		return INVALID_HANDLE;
 	}
-	
+
 	return connection;
 }
 
@@ -552,7 +552,7 @@ Handle:SQL_SendQuery(Handle:connection, const String:query[])
 {
 	if(connection == INVALID_HANDLE)
 		return INVALID_HANDLE;
-	
+
 	new Handle:hQuery = SQL_Query(connection, query);
 	if(hQuery == INVALID_HANDLE)
 	{
@@ -561,7 +561,7 @@ Handle:SQL_SendQuery(Handle:connection, const String:query[])
 		LogMessageToFile("[VIP-Manager] Query Error for query (%s)! Error: %s", query, error);
 		return INVALID_HANDLE;
 	}
-	
+
 	return hQuery;
 }
 
@@ -569,7 +569,7 @@ bool:SQL_SendFastQuery(Handle:connection, const String:query[])
 {
 	if(connection == INVALID_HANDLE)
 		return false;
-	
+
 	if(!SQL_FastQuery(connection, query))
 	{
 		decl String:error[255];
@@ -577,7 +577,7 @@ bool:SQL_SendFastQuery(Handle:connection, const String:query[])
 		LogMessageToFile("[VIP-Manager] FastQuery Error for query (%s)! Error: %s", query, error);
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -585,9 +585,9 @@ LogMessageToFile(const String:msg[], any:...)
 {
 	if(IsStringEmpty(msg) || IsStringEmpty(logFilePath) || !GetConVarBool(VIP_Log))
 		return;
-	
+
 	new String:message[512];
 	VFormat(message, sizeof(message), msg, 2);
-	
+
 	LogToFileEx(logFilePath, message);
 }
