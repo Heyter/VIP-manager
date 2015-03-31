@@ -1,6 +1,7 @@
 VIP-Manager
 ==========
 
-VIP-Manager is a sourcemod plugin which allow you to add VIPs to your server for a specified or unlimited time.
+VIP-Manager is a sourcemod plugin which allows you to manage VIPs on your server.
+VIPs can exists for a specified or unlimited time.
 
-Copyright (c) 2014 Shadow_Man
+Copyright (c) 2015 Shadow_Man
