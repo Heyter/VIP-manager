@@ -2,7 +2,7 @@
 
 #define Version "2.0 Dev"
 
-Database database;
+Database connection;
 
 public Plugin myinfo = {
 	name = "VIP-Manager",
@@ -14,23 +14,38 @@ public Plugin myinfo = {
 
 public void OnPluginStart()
 {
-	CreateConVar("sm_vipm_version", Version, FCVAR_PLUGIN | FCVAR_SPONLY);
+	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
 
 	ConnectToDatabase();
+	CreateTableIfExists();
 }
 
-public void CallbackConnect(Database db, char[] error, any configuration)
+public void CallbackConnect(Database db, char[] error, any data)
 {
 	if(db == null)
-		LogError("Can't connect to server using '%s' configuration. Error: %s", configuration, error);
+		LogError("Can't connect to server. Error: %s", error);
 
-	database = db;
+	connection = db;
+}
+
+public void CallbackCreateTable(Database db, DBResultSet result, char[] error, any data)
+{
+	if(result == null)
+		LogError("Error while creating table! Error: %s", error);
 }
 
 void ConnectToDatabase()
 {
 	if(SQL_CheckConfig("vip-manager"))
-		database.Connect(CallbackConnect, "vip-manager", "vip-manager");
+		Database.Connect(CallbackConnect, "vip-manager");
 	else
-		database.Connect(CallbackConnect, "default", "default");
+		Database.Connect(CallbackConnect, "default");
+}
+
+void CreateTableIfExists()
+{
+	if(connection == null)
+		return;
+
+	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT NOW(), duration INT(11) NOT NULL);");
 }
