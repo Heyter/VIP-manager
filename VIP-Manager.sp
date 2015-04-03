@@ -19,7 +19,6 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 
 	ConnectToDatabase();
-	CreateTableIfExists();
 }
 
 public Action CmdAddVIP(int client, int args)
@@ -32,14 +31,14 @@ public Action CmdAddVIP(int client, int args)
 
 	if(args < 2)
 	{
-		ReplyToCommand(client, "Usage: sm_vipm_add <\"name\"|#id> <minutes>");
+		ReplyToCommand(client, "Usage: sm_vipm_add <\"name\"> <minutes>");
 		return Plugin_Handled;
 	}
 
 	char searchName[64];
 	GetCmdArg(1, searchName, sizeof(searchName));
 
-	int vip = FindTarget(client, searchName, true);
+	int vip = FindPlayer(searchName);
 	if(vip == -1)
 	{
 		ReplyToCommand(client, "Can't find client '%s'", searchName);
@@ -69,6 +68,7 @@ public Action CmdAddVIP(int client, int args)
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
+	pack.WriteCell(vip);
 	pack.WriteString(vipName);
 	pack.WriteCell(duration);
 
@@ -85,6 +85,7 @@ public void CallbackConnect(Database db, char[] error, any data)
 		LogError("Can't connect to server. Error: %s", error);
 
 	connection = db;
+	CreateTableIfExists();
 }
 
 public void CallbackCreateTable(Database db, DBResultSet result, char[] error, any data)
@@ -96,12 +97,14 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
 	int client = pack.ReadCell();
+	int vip = pack.ReadCell();
 
 	if(result == null)
 	{
 		LogError("Error while adding VIP! Error: %s", error);
-		ReplyToCommand(client, "Can't add VIP! Please check the log.");
+		ReplyClient(client, "Can't add VIP! %s", error);
 		return;
 	}
 
@@ -110,7 +113,10 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 
 	int duration = pack.ReadCell();
 
-	ReplyToCommand(client, "Successfully added '%s' as a VIP for %i minutes!", vipName, duration);
+	if(!AddVipToAdminCache(vip))
+		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", vipName);
+	else
+		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", vipName, duration);
 }
 
 void ConnectToDatabase()
@@ -127,4 +133,52 @@ void CreateTableIfExists()
 		return;
 
 	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT NOW(), duration INT(11) NOT NULL);");
+}
+
+bool AddVipToAdminCache(int client)
+{
+	char steamId[64];
+	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+
+	if(FindAdminByIdentity(AUTHMETHOD_STEAM, steamId) != INVALID_ADMIN_ID)
+		return false;
+
+	GroupId group = FindAdmGroup("VIP");
+	if(group == INVALID_GROUP_ID)
+		return false;
+
+	AdminId admin = CreateAdmin();
+	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
+
+	AdminInheritGroup(admin, group);
+	return true;
+}
+
+int FindPlayer(char[] searchTerm)
+{
+	for(int i = 1; i < MaxClients; i++)
+	{
+		if(!IsClientConnected(i))
+			continue;
+
+		char playerName[64];
+		GetClientName(i, playerName, sizeof(playerName));
+
+		if(StrContains(playerName, searchTerm, false) > -1)
+			return i;
+	}
+
+	return -1;
+}
+
+void ReplyClient(int client, const char[] format, any ...)
+{
+	int len = strlen(format) + 256;
+	char[] message = new char[len];
+	VFormat(message, len, format, 3);
+
+	if(client == 0)
+		PrintToServer(message);
+	else
+		PrintToChat(client, message);
 }
