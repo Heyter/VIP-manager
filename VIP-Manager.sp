@@ -22,6 +22,12 @@ public void OnPluginStart()
 	ConnectToDatabase();
 }
 
+public void OnRebuildAdminCache(AdminCachePart part)
+{
+	if(part == AdminCache_Admins)
+		FetchAvailableVIPs();
+}
+
 public Action OnClientPreAdminCheck(int client)
 {
 	if(connection == null)
@@ -270,6 +276,15 @@ void FetchVIP(int client)
 	char query[128];
 	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
 	connection.Query(CallbackFetchVIP, query, client);
+}
+
+void FetchAvailableVIPs()
+{
+	for(int i = 1; i < MaxClients; i++)
+	{
+		if(IsClientConnected(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
+			FetchVIP(i);
+	}
 }
 
 bool AddVipToAdminCache(int client)
