@@ -22,7 +22,7 @@ public void OnPluginStart()
 	ConnectToDatabase();
 }
 
-public void OnRebuildAdminCache(AdminCachePart part)
+public int OnRebuildAdminCache(AdminCachePart part)
 {
 	if(part == AdminCache_Admins)
 		FetchAvailableVIPs();
