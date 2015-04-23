@@ -22,6 +22,18 @@ public void OnPluginStart()
 	ConnectToDatabase();
 }
 
+public Action OnClientPreAdminCheck(int client)
+{
+	if(connection == null)
+		return Plugin_Continue;
+
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
+		return Plugin_Continue;
+
+	FetchVIP(client);
+	return Plugin_Handled;
+}
+
 public Action CmdAddVIP(int client, int args)
 {
 	if(connection == null)
@@ -213,6 +225,23 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 	connection.Query(CallbackRemoveVIP, query, pack);
 }
 
+public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
+{
+	int client = data;
+
+	if(result == null)
+	{
+		LogError("Error while fetching VIP! Error: %s", error);
+		return;
+	}
+
+	if(result.AffectedRows != 1)
+		return;
+
+	AddVipToAdminCache(client);
+	NotifyPostAdminCheck(client);
+}
+
 void ConnectToDatabase()
 {
 	if(SQL_CheckConfig("vip-manager"))
@@ -227,6 +256,20 @@ void CreateTableIfExists()
 		return;
 
 	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT NOW(), duration INT(11) NOT NULL);");
+}
+
+void FetchVIP(int client)
+{
+	char steamId[64];
+	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+
+	int len = strlen(steamId) * 2 + 1;
+	char[] escapedSteamId = new char[len];
+	connection.Escape(steamId, escapedSteamId, len);
+
+	char query[128];
+	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
+	connection.Query(CallbackFetchVIP, query, client);
 }
 
 bool AddVipToAdminCache(int client)
