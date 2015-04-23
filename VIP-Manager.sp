@@ -36,6 +36,7 @@ public Action OnClientPreAdminCheck(int client)
 	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
 		return Plugin_Continue;
 
+	CheckVIP(client);
 	FetchVIP(client);
 	return Plugin_Handled;
 }
@@ -122,7 +123,7 @@ public Action CmdRemoveVIP(int client, int args)
 	pack.WriteCell(client);
 	pack.WriteString(searchName);
 
-	connection.Query(CallbackRemoveVIP, query, pack);
+	connection.Query(CallbackPreRemoveVIP, query, pack);
 	return Plugin_Handled;
 }
 
@@ -166,7 +167,7 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", vipName, duration);
 }
 
-public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any data)
+public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
@@ -174,23 +175,8 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 
 	if(result == null)
 	{
-		LogError("Error while removing VIP! Error: %s", error);
+		LogError("Error while selecting VIP for removing! Error: %s", error);
 		ReplyClient(client, "Can't remove VIP! %s", error);
-		return;
-	}
-
-	char steamId[64];
-	char vipName[64];
-	char reason[128];
-
-	if(!result.HasResults)
-	{
-		pack.ReadString(steamId, sizeof(steamId));
-		pack.ReadString(vipName, sizeof(vipName));
-		pack.ReadString(reason, sizeof(reason));
-
-		RemoveVipFromAdminCache(steamId);
-		ReplyClient(client, "Successfully removed VIP '%s'! Reason: %s", vipName, reason);
 		return;
 	}
 
@@ -208,27 +194,49 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 		return;
 	}
 
-	delete pack;
-	pack = new DataPack();
-	pack.WriteCell(client);
-
 	result.FetchRow();
 
+	char steamId[64];
 	result.FetchString(0, steamId, sizeof(steamId));
-	pack.WriteString(steamId);
 
-	result.FetchString(1, vipName, sizeof(vipName));
-	pack.WriteString(vipName);
+	char name[64];
+	result.FetchString(1, name, sizeof(name));
 
 	char adminName[64];
 	GetClientName(client, adminName, sizeof(adminName));
 
+	char reason[128];
 	Format(reason, sizeof(reason), "Removed by admin '%s'", adminName);
-	pack.WriteString(reason);
 
-	char query[128];
-	Format(query, sizeof(query), "DELETE FROM vips WHERE steamId = '%s';", steamId);
-	connection.Query(CallbackRemoveVIP, query, pack);
+	RemoveVip(client, steamId, name, reason);
+}
+
+public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any data)
+{
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+
+	int client = pack.ReadCell();
+
+	if(result == null)
+	{
+		LogError("Error while removing VIP! Error: %s", error);
+		if(client > 0)
+			ReplyClient(client, "Can't remove VIP! %s", error);
+		return;
+	}
+
+	char steamId[64];
+	pack.ReadString(steamId, sizeof(steamId));
+
+	char name[64];
+	pack.ReadString(name, sizeof(name));
+
+	char reason[128];
+	pack.ReadString(reason, sizeof(reason));
+
+	RemoveVipFromAdminCache(steamId);
+	ReplyClient(client, "Removed VIP %s(%s)! Reason: %s", name, steamId, reason);
 }
 
 public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
@@ -246,6 +254,31 @@ public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any 
 
 	AddVipToAdminCache(client);
 	NotifyPostAdminCheck(client);
+}
+
+public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any data)
+{
+	if(result == null)
+	{
+		LogError("Error while checking VIP! Error: %s", error);
+		return;
+	}
+
+	if(result.AffectedRows != 1)
+		return;
+
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+
+	char steamId[64];
+	pack.ReadString(steamId, sizeof(steamId));
+
+	char name[64];
+	pack.ReadString(name, sizeof(name));
+
+	char[] reason = "Time expired!";
+
+	RemoveVip(0, steamId, name, reason);
 }
 
 void ConnectToDatabase()
@@ -285,6 +318,47 @@ void FetchAvailableVIPs()
 		if(IsClientConnected(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
 			FetchVIP(i);
 	}
+}
+
+void CheckVIP(int client)
+{
+	if(connection == null)
+		return;
+
+	DataPack pack = new DataPack();
+
+	char steamId[64];
+	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+	pack.WriteString(steamId);
+
+	char name[64];
+	GetClientName(client, name, sizeof(name));
+	pack.WriteString(name);
+
+	int len = strlen(steamId) * 2 + 1;
+	char[] escapedSteamId = new char[len];
+	connection.Escape(steamId, escapedSteamId, len);
+
+	char query[196];
+	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL days DAY), NOW()) < 0 AND duration > 0;", escapedSteamId);
+	connection.Query(CallbackCheckVIP, query, pack);
+}
+
+void RemoveVip(int client, char[] steamId, char[] name, char[] reason)
+{
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteString(steamId);
+	pack.WriteString(name);
+	pack.WriteString(reason);
+
+	int len = strlen(steamId) * 2 + 1;
+	char[] escapedSteamId = new char[len];
+	connection.Escape(steamId, escapedSteamId, len);
+
+	char query[128];
+	Format(query, sizeof(query), "DELETE FROM vips WHERE steamId = '%s';", escapedSteamId);
+	connection.Query(CallbackRemoveVIP, query, pack);
 }
 
 bool AddVipToAdminCache(int client)
