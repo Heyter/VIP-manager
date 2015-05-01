@@ -340,7 +340,7 @@ void CheckVIP(int client)
 	connection.Escape(steamId, escapedSteamId, len);
 
 	char query[196];
-	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL days DAY), NOW()) < 0 AND duration > 0;", escapedSteamId);
+	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;", escapedSteamId);
 	connection.Query(CallbackCheckVIP, query, pack);
 }
 
