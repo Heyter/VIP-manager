@@ -18,6 +18,7 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
+	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
 
 	ConnectToDatabase();
 }
@@ -124,6 +125,46 @@ public Action CmdRemoveVIP(int client, int args)
 	pack.WriteString(searchName);
 
 	connection.Query(CallbackPreRemoveVIP, query, pack);
+	return Plugin_Handled;
+}
+
+public Action CmdChangeVIPTime(int client, int args)
+{
+	if(args != 3)
+	{
+		ReplyToCommand(client, "Usage: sm_vipm_time <set|add|sub> <\"name\"> <minutes>");
+		return Plugin_Handled;
+	}
+
+	char method[8];
+	GetCmdArg(1, method, sizeof(method));
+
+	if(!StrEqual(method, "set", false) && !StrEqual(method, "add", false) && !StrEqual(method, "sub", false))
+	{
+		ReplyToCommand(client, "Unknown method '%s'! Please use 'set', 'add' or 'sub'.", method);
+		return Plugin_Handled;
+	}
+
+	char searchName[64];
+	GetCmdArg(2, searchName, sizeof(searchName));
+
+	char minutesString[8];
+	GetCmdArg(3, minutesString, sizeof(minutesString));
+
+	int minutes = StringToInt(minutesString);
+	if(minutes < 0)
+		minutes *= -1;
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteString(searchName);
+	pack.WriteString(method);
+	pack.WriteCell(minutes);
+
+	char query[64];
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
+
+	connection.Query(CallbackPreChangeTime, query, pack);
 	return Plugin_Handled;
 }
 
@@ -237,6 +278,91 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 
 	RemoveVipFromAdminCache(steamId);
 	ReplyClient(client, "Removed VIP %s(%s)! Reason: %s", name, steamId, reason);
+}
+
+public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error, any data)
+{
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+	int client = pack.ReadCell();
+
+	if(result == null)
+	{
+		LogError("Error while selecting VIP for time manipulation! Error: %s", error);
+		ReplyClient(client, "Can't change time for VIP! %s", error);
+		return;
+	}
+
+	char searchName[64];
+	pack.ReadString(searchName, sizeof(searchName));
+
+	if(result.AffectedRows == 0)
+	{
+		ReplyClient(client, "Can't find a VIP with the name '%s'!", searchName);
+		return;
+	}
+	else if(result.AffectedRows > 1)
+	{
+		ReplyClient(client, "Found more than one VIP with the name '%s'! Please specify the name more accurately!", searchName);
+		return;
+	}
+
+	result.FetchRow();
+
+	char steamId[64];
+	result.FetchString(0, steamId, sizeof(steamId));
+
+	char name[64];
+	result.FetchString(1, name, sizeof(name));
+
+	int duration = result.FetchInt(3);
+
+	char method[8];
+	pack.ReadString(method, sizeof(method));
+
+	int newDuration;
+	int minutes = pack.ReadCell();
+	if(StrEqual(method, "set", false))
+		newDuration = minutes;
+	else if(StrEqual(method, "add"))
+		newDuration = duration + minutes;
+	else if(StrEqual(method, "sub"))
+		newDuration = duration - minutes;
+
+	delete pack;
+	pack = new DataPack();
+
+	pack.WriteCell(client);
+	pack.WriteString(name);
+	pack.WriteCell(duration);
+	pack.WriteCell(newDuration);
+
+	char query[128];
+	Format(query, sizeof(query), "UPDATE vips SET duration = %i WHERE steamId = '%s'", newDuration, steamId);
+
+	connection.Query(CallbackChangeTime, query, pack);
+}
+
+public void CallbackChangeTime(Database db, DBResultSet result, char[] error, any data)
+{
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+	int client = pack.ReadCell();
+
+	if(result == null)
+	{
+		LogError("Error while manipulate VIP time! Error: %s", error);
+		ReplyClient(client, "Can't change time for VIP! %s", error);
+		return;
+	}
+
+	char name[64];
+	pack.ReadString(name, sizeof(name));
+
+	int duration = pack.ReadCell();
+	int newDuration = pack.ReadCell();
+
+	ReplyClient(client, "Changed time for VIP '%s' from %i to %i minutes!", name, duration, newDuration);
 }
 
 public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
