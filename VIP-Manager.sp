@@ -205,7 +205,7 @@ public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, 
 	char adminName[64];
 	GetClientName(client, adminName, sizeof(adminName));
 
-	char reason[128];
+	char reason[256];
 	Format(reason, sizeof(reason), "Removed by admin '%s'", adminName);
 
 	RemoveVip(client, steamId, name, reason);
@@ -232,7 +232,7 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 	char name[64];
 	pack.ReadString(name, sizeof(name));
 
-	char reason[128];
+	char reason[256];
 	pack.ReadString(reason, sizeof(reason));
 
 	RemoveVipFromAdminCache(steamId);
@@ -276,7 +276,8 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	char name[64];
 	pack.ReadString(name, sizeof(name));
 
-	char[] reason = "Time expired!";
+	char reason[256];
+	strcopy(reason, sizeof(reason), "Time expired!");
 
 	RemoveVip(0, steamId, name, reason);
 }
