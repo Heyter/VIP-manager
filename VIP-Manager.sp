@@ -381,6 +381,7 @@ bool AddVipToAdminCache(int client)
 	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
 
 	AdminInheritGroup(admin, group);
+	RunAdminCacheChecks(client);
 	return true;
 }
 
