@@ -366,8 +366,9 @@ bool AddVipToAdminCache(int client)
 	char steamId[64];
 	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 
-	if(FindAdminByIdentity(AUTHMETHOD_STEAM, steamId) != INVALID_ADMIN_ID)
-		return false;
+	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
+	if(admin != INVALID_ADMIN_ID)
+		RemoveAdmin(admin);
 
 	GroupId group = FindAdmGroup("VIP");
 	if(group == INVALID_GROUP_ID)
@@ -376,7 +377,7 @@ bool AddVipToAdminCache(int client)
 		return false;
 	}
 
-	AdminId admin = CreateAdmin();
+	admin = CreateAdmin();
 	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
 
 	AdminInheritGroup(admin, group);
