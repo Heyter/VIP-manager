@@ -371,7 +371,10 @@ bool AddVipToAdminCache(int client)
 
 	GroupId group = FindAdmGroup("VIP");
 	if(group == INVALID_GROUP_ID)
+	{
+		PrintToServer("[VIP-Manager] Couldn't found group 'VIP'! Please create a group called 'VIP'.");
 		return false;
+	}
 
 	AdminId admin = CreateAdmin();
 	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
