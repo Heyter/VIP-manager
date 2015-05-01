@@ -69,7 +69,7 @@ public Action CmdAddVIP(int client, int args)
 	GetClientName(vip, vipName, sizeof(vipName));
 
 	char vipSteamId[64];
-	GetClientAuthId(vip, AuthId_Steam2, vipSteamId, sizeof(vipSteamId));
+	GetClientAuthId(vip, AuthId_Engine, vipSteamId, sizeof(vipSteamId));
 
 	char durationString[16];
 	GetCmdArg(2, durationString, sizeof(durationString));
@@ -300,7 +300,7 @@ void CreateTableIfExists()
 void FetchVIP(int client)
 {
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
@@ -328,7 +328,7 @@ void CheckVIP(int client)
 	DataPack pack = new DataPack();
 
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 	pack.WriteString(steamId);
 
 	char name[64];
@@ -364,7 +364,7 @@ void RemoveVip(int client, char[] steamId, char[] name, char[] reason)
 bool AddVipToAdminCache(int client)
 {
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Steam2, steamId, sizeof(steamId));
+	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 
 	if(FindAdminByIdentity(AUTHMETHOD_STEAM, steamId) != INVALID_ADMIN_ID)
 		return false;
