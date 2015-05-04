@@ -1,8 +1,13 @@
 #include <sourcemod>
+#include <VIP-Manager>
 
 #define Version "2.0 Dev"
 
 Database connection;
+
+Handle onAddVIPForward;
+Handle onRemoveVIPForward;
+Handle onDurationChangedForward;
 
 public Plugin myinfo = {
 	name = "VIP-Manager",
@@ -19,6 +24,10 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
+
+	onAddVIPForward = CreateGlobalForward("OnVIPAdded", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
+	onRemoveVIPForward = CreateGlobalForward("OnVIPRemoved", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String);
+	onDurationChangedForward = CreateGlobalForward("OnVIPDurationChanged", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String, Param_Cell, Param_Cell);
 
 	ConnectToDatabase();
 }
@@ -66,11 +75,11 @@ public Action CmdAddVIP(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char vipName[64];
-	GetClientName(vip, vipName, sizeof(vipName));
+	char name[64];
+	GetClientName(vip, name, sizeof(name));
 
-	char vipSteamId[64];
-	GetClientAuthId(vip, AuthId_Engine, vipSteamId, sizeof(vipSteamId));
+	char steamId[64];
+	GetClientAuthId(vip, AuthId_Engine, steamId, sizeof(steamId));
 
 	char durationString[16];
 	GetCmdArg(2, durationString, sizeof(durationString));
@@ -79,22 +88,23 @@ public Action CmdAddVIP(int client, int args)
 	if(duration < -1)
 		duration = -1;
 
-	int len = strlen(vipName) * 2 + 1;
-	char[] escapedVipName = new char[len];
-	connection.Escape(vipName, escapedVipName, len);
+	int len = strlen(name) * 2 + 1;
+	char[] escapedName = new char[len];
+	connection.Escape(name, escapedName, len);
 
-	len = strlen(vipSteamId) * 2 + 1;
-	char[] escapedVipSteamId = new char[len];
-	connection.Escape(vipSteamId, escapedVipSteamId, len);
+	len = strlen(steamId) * 2 + 1;
+	char[] escapedSteamId = new char[len];
+	connection.Escape(steamId, escapedSteamId, len);
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
 	pack.WriteCell(vip);
-	pack.WriteString(vipName);
+	pack.WriteString(name);
+	pack.WriteString(steamId);
 	pack.WriteCell(duration);
 
 	char query[512];
-	Format(query, sizeof(query), "INSERT INTO vips (steamId, name, duration) VALUES ('%s', '%s', %i);", escapedVipSteamId, escapedVipName, duration);
+	Format(query, sizeof(query), "INSERT INTO vips (steamId, name, duration) VALUES ('%s', '%s', %i);", escapedSteamId, escapedName, duration);
 	connection.Query(CallbackAddVIP, query, pack);
 
 	return Plugin_Handled;
@@ -136,12 +146,12 @@ public Action CmdChangeVIPTime(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char method[8];
-	GetCmdArg(1, method, sizeof(method));
+	char mode[8];
+	GetCmdArg(1, mode, sizeof(mode));
 
-	if(!StrEqual(method, "set", false) && !StrEqual(method, "add", false) && !StrEqual(method, "sub", false))
+	if(!StrEqual(mode, "set", false) && !StrEqual(mode, "add", false) && !StrEqual(mode, "sub", false))
 	{
-		ReplyToCommand(client, "Unknown method '%s'! Please use 'set', 'add' or 'sub'.", method);
+		ReplyToCommand(client, "Unknown mode '%s'! Please use 'set', 'add' or 'sub'.", mode);
 		return Plugin_Handled;
 	}
 
@@ -158,7 +168,7 @@ public Action CmdChangeVIPTime(int client, int args)
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
 	pack.WriteString(searchName);
-	pack.WriteString(method);
+	pack.WriteString(mode);
 	pack.WriteCell(minutes);
 
 	char query[64];
@@ -197,15 +207,25 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 		return;
 	}
 
-	char vipName[64];
-	pack.ReadString(vipName, sizeof(vipName));
+	char name[64];
+	pack.ReadString(name, sizeof(name));
+
+	char steamId[64];
+	pack.ReadString(steamId, sizeof(steamId));
 
 	int duration = pack.ReadCell();
 
+	Call_StartForward(onAddVIPForward);
+	Call_PushCell(client);
+	Call_PushString(name);
+	Call_PushString(steamId);
+	Call_PushCell(duration);
+	Call_Finish();
+
 	if(!AddVipToAdminCache(vip))
-		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", vipName);
+		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", name);
 	else
-		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", vipName, duration);
+		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", name, duration);
 }
 
 public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, any data)
@@ -277,6 +297,14 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 	pack.ReadString(reason, sizeof(reason));
 
 	RemoveVipFromAdminCache(steamId);
+
+	Call_StartForward(onRemoveVIPForward);
+	Call_PushCell(client);
+	Call_PushString(name);
+	Call_PushString(steamId);
+	Call_PushString(reason);
+	Call_Finish();
+
 	ReplyClient(client, "Removed VIP %s(%s)! Reason: %s", name, steamId, reason);
 }
 
@@ -317,16 +345,16 @@ public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error,
 
 	int duration = result.FetchInt(3);
 
-	char method[8];
-	pack.ReadString(method, sizeof(method));
+	char mode[8];
+	pack.ReadString(mode, sizeof(mode));
 
 	int newDuration;
 	int minutes = pack.ReadCell();
-	if(StrEqual(method, "set", false))
+	if(StrEqual(mode, "set", false))
 		newDuration = minutes;
-	else if(StrEqual(method, "add"))
+	else if(StrEqual(mode, "add"))
 		newDuration = duration + minutes;
-	else if(StrEqual(method, "sub"))
+	else if(StrEqual(mode, "sub"))
 		newDuration = duration - minutes;
 
 	delete pack;
@@ -334,6 +362,8 @@ public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error,
 
 	pack.WriteCell(client);
 	pack.WriteString(name);
+	pack.WriteString(steamId);
+	pack.WriteString(mode);
 	pack.WriteCell(duration);
 	pack.WriteCell(newDuration);
 
@@ -359,8 +389,23 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 	char name[64];
 	pack.ReadString(name, sizeof(name));
 
+	char steamId[64];
+	pack.ReadString(steamId, sizeof(steamId));
+
+	char mode[8];
+	pack.ReadString(mode, sizeof(mode));
+
 	int duration = pack.ReadCell();
 	int newDuration = pack.ReadCell();
+
+	Call_StartForward(onDurationChangedForward);
+	Call_PushCell(client);
+	Call_PushString(name);
+	Call_PushString(steamId);
+	Call_PushString(mode);
+	Call_PushCell(duration);
+	Call_PushCell(newDuration);
+	Call_Finish();
 
 	ReplyClient(client, "Changed time for VIP '%s' from %i to %i minutes!", name, duration, newDuration);
 }
