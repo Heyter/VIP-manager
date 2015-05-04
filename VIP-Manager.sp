@@ -480,7 +480,7 @@ void FetchVIP(int client)
 
 	char query[128];
 	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
-	connection.Query(CallbackFetchVIP, query, client);
+	connection.Query(CallbackFetchVIP, query, client, DBPrio_High);
 }
 
 void FetchAvailableVIPs()
@@ -513,7 +513,7 @@ void CheckVIP(int client)
 
 	char query[196];
 	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;", escapedSteamId);
-	connection.Query(CallbackCheckVIP, query, pack);
+	connection.Query(CallbackCheckVIP, query, pack, DBPrio_High);
 }
 
 void RemoveVip(int client, char[] steamId, char[] name, char[] reason)
