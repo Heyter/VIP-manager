@@ -17,6 +17,13 @@ public Plugin myinfo = {
 	url = "http://cf-server.pfweb.eu"
 };
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
+{
+	RegPluginLibrary("VIP-Manager");
+
+	return APLRes_Success;
+}
+
 public void OnPluginStart()
 {
 	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
