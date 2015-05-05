@@ -1,7 +1,7 @@
 #include <sourcemod>
 #include <VIP-Manager>
 
-#define Version "2.0 Dev"
+#define Version "2.0"
 
 Database connection;
 
