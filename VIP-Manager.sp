@@ -135,7 +135,7 @@ public Action CmdRemoveVIP(int client, int args)
 	GetCmdArg(1, searchName, sizeof(searchName));
 
 	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s';", searchName);
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
