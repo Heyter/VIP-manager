@@ -1,5 +1,4 @@
 #include <sourcemod>
-#include <VIP-Manager>
 
 #define Version "2.0"
 
