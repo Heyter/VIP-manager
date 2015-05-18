@@ -80,25 +80,36 @@ public Action CmdAddVIP(int client, int args)
 
 	if(args < 2)
 	{
-		ReplyToCommand(client, "Usage: sm_vipm_add <\"name\"> <minutes>");
+		ReplyToCommand(client, "Usage: sm_vipm_add <\"name\"> <minutes> [\"SteamId\"]");
 		return Plugin_Handled;
 	}
 
-	char searchName[64];
-	GetCmdArg(1, searchName, sizeof(searchName));
-
-	int vip = FindPlayer(searchName);
-	if(vip == -1)
-	{
-		ReplyToCommand(client, "Can't find client '%s'", searchName);
-		return Plugin_Handled;
-	}
-
+	int vip = 0;
 	char name[64];
-	GetClientName(vip, name, sizeof(name));
-
 	char steamId[64];
-	GetClientAuthId(vip, AuthId_Engine, steamId, sizeof(steamId));
+	bool addToCache = false;
+
+	if(args == 2)
+	{
+		char searchName[64];
+		GetCmdArg(1, searchName, sizeof(searchName));
+
+		vip = FindPlayer(searchName);
+		if(vip == -1)
+		{
+			ReplyToCommand(client, "Can't find client '%s'", searchName);
+			return Plugin_Handled;
+		}
+
+		GetClientName(vip, name, sizeof(name));
+		GetClientAuthId(vip, AuthId_Engine, steamId, sizeof(steamId));
+		addToCache = true;
+	}
+	else
+	{
+		GetCmdArg(1, name, sizeof(name));
+		GetCmdArg(3, steamId, sizeof(steamId));
+	}
 
 	char durationString[16];
 	GetCmdArg(2, durationString, sizeof(durationString));
@@ -121,6 +132,7 @@ public Action CmdAddVIP(int client, int args)
 	pack.WriteString(name);
 	pack.WriteString(steamId);
 	pack.WriteCell(duration);
+	pack.WriteCell(addToCache);
 
 	char query[512];
 	Format(query, sizeof(query), "INSERT INTO vips (steamId, name, duration) VALUES ('%s', '%s', %i);", escapedSteamId, escapedName, duration);
@@ -253,7 +265,8 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 	Call_PushCell(duration);
 	Call_Finish();
 
-	if(!AddVipToAdminCache(vip))
+	bool addToCache = pack.ReadCell();
+	if(addToCache && !AddVipToAdminCache(vip))
 		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", name);
 	else
 		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", name, duration);
