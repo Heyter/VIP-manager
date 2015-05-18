@@ -27,6 +27,7 @@ public void OnPluginStart()
 {
 	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
 
+	RegAdminCmd("sm_vipm", CmdVIPM, ADMFLAG_ROOT, "Lists all commands.");
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
@@ -55,6 +56,17 @@ public Action OnClientPreAdminCheck(int client)
 
 	CheckVIP(client);
 	FetchVIP(client);
+	return Plugin_Handled;
+}
+
+public Action CmdVIPM(int client, int args)
+{
+	ReplyToCommand(client, "sm_vipm | Lists all commands.");
+	ReplyToCommand(client, "sm_vipm_add <\"name\"> <minutes> [\"SteamId\"] | Add a VIP. If SteamID is give, it will be used.");
+	ReplyToCommand(client, "sm_vipm_rm <\"name\"> | Remove a VIP");
+	ReplyToCommand(client, "sm_vipm_time <set|add|sub> <\"name\"> <minutes> | Change the duration for a VIP.");
+	ReplyToCommand(client, "sm_vipm_check | Checks for expired VIPs.");
+
 	return Plugin_Handled;
 }
 
