@@ -30,6 +30,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
+	RegAdminCmd("sm_vipm_check", CmdCheckVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
 
 	onAddVIPForward = CreateGlobalForward("OnVIPAdded", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
 	onRemoveVIPForward = CreateGlobalForward("OnVIPRemoved", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String);
@@ -181,6 +182,18 @@ public Action CmdChangeVIPTime(int client, int args)
 	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
 
 	connection.Query(CallbackPreChangeTime, query, pack);
+	return Plugin_Handled;
+}
+
+public Action CmdCheckVIPs(int client, int args)
+{
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+
+	char query[64];
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;");
+
+	connection.Query(CallbackCheckVIPs, query, pack);
 	return Plugin_Handled;
 }
 
@@ -457,6 +470,42 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	strcopy(reason, sizeof(reason), "Time expired!");
 
 	RemoveVip(0, steamId, name, reason);
+}
+
+public void CallbackCheckVIPs(Database db, DBResultSet result, char[] error, any data)
+{
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+	int client = pack.ReadCell();
+
+	if(result == null)
+	{
+		LogError("Error while checking VIPs! Error: %s", error);
+		ReplyClient(client, "Can't check VIPs! %s", error);
+		return;
+	}
+
+	if(result.AffectedRows <= 0)
+	{
+		ReplyClient(client, "No VIP is expired.");
+		return;
+	}
+
+	while(result.FetchRow())
+	{
+		char steamId[64];
+		result.FetchString(1, steamId, sizeof(steamId));
+
+		char name[64];
+		result.FetchString(2, name, sizeof(name));
+
+		char reason[256];
+		strcopy(reason, sizeof(reason), "Time expired!");
+
+		RemoveVip(client, steamId, name, reason);
+	}
+
+	ReplyClient(client, "Removed all expired VIPs!");
 }
 
 void ConnectToDatabase()
