@@ -38,9 +38,9 @@ forward void OnVIPRemoved(int admin, char[] name, char[] steamId, char[] reason)
 /**
   * Called everytime the duration for a VIP has changed.
   *
-  * @param admin          Index of admin, who has removed the VIP.
-  * @param name           Name of the removed VIP.
-  * @param steamId        SteamId of the removed VIP.
+  * @param admin          Index of admin, who has changed the duration for a VIP.
+  * @param name           Name of the VIP.
+  * @param steamId        SteamId of the VIP.
   * @param mode           The mode used for the change. Can be 'set', 'add' or 'sub'.
   * @param oldDuration    Old value of the duration.
   * @param duration       New value of the duration.
