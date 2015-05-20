@@ -519,10 +519,10 @@ public void CallbackCheckVIPs(Database db, DBResultSet result, char[] error, any
 	while(result.FetchRow())
 	{
 		char steamId[64];
-		result.FetchString(1, steamId, sizeof(steamId));
+		result.FetchString(0, steamId, sizeof(steamId));
 
 		char name[64];
-		result.FetchString(2, name, sizeof(name));
+		result.FetchString(1, name, sizeof(name));
 
 		char reason[256];
 		strcopy(reason, sizeof(reason), "Time expired!");
