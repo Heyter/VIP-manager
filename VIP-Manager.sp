@@ -202,7 +202,7 @@ public Action CmdChangeVIPTime(int client, int args)
 	pack.WriteString(mode);
 	pack.WriteCell(minutes);
 
-	char query[64];
+	char query[128];
 	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
 
 	connection.Query(CallbackPreChangeTime, query, pack);
@@ -214,7 +214,7 @@ public Action CmdCheckVIPs(int client, int args)
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
 
-	char query[64];
+	char query[128];
 	Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;");
 
 	connection.Query(CallbackCheckVIPs, query, pack);
