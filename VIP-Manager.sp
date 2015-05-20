@@ -215,7 +215,7 @@ public Action CmdCheckVIPs(int client, int args)
 	pack.WriteCell(client);
 
 	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;");
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;");
 
 	connection.Query(CallbackCheckVIPs, query, pack);
 	return Plugin_Handled;
@@ -592,7 +592,7 @@ void CheckVIP(int client)
 	connection.Escape(steamId, escapedSteamId, len);
 
 	char query[196];
-	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration > 0;", escapedSteamId);
+	Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;", escapedSteamId);
 	connection.Query(CallbackCheckVIP, query, pack, DBPrio_High);
 }
 
