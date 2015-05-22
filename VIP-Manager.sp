@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define Version "2.0"
+#define Version "2.1"
 
 Database connection;
 
