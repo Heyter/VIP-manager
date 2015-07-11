@@ -546,7 +546,7 @@ void CreateTableIfExists()
 	if(connection == null)
 		return;
 
-	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT NOW(), duration INT(11) NOT NULL);");
+	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP, duration INT(11) NOT NULL);");
 }
 
 void FetchVIP(int client)
