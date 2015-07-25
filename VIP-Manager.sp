@@ -27,7 +27,7 @@ public void OnPluginStart()
 {
 	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
 
-	RegAdminCmd("sm_vipm", CmdVIPM, ADMFLAG_ROOT, "Lists all commands.");
+	RegAdminCmd("sm_vipm", Cmd_PrintHelp, ADMFLAG_ROOT, "Lists all commands.");
 	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
@@ -40,7 +40,7 @@ public void OnPluginStart()
 	ConnectToDatabase();
 }
 
-public Action CmdVIPM(int client, int args)
+public Action Cmd_PrintHelp(int client, int args)
 {
 	ReplyToCommand(client, "sm_vipm | Lists all commands.");
 	ReplyToCommand(client, "sm_vipm_add <\"name\"> <minutes> [\"SteamId\"] | Add a VIP. If SteamID is give, it will be used.");
