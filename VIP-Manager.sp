@@ -3,6 +3,7 @@
 #define Version "2.1"
 
 typedef VIPSelectedCallback = function void(int caller, const char[] name, const char[] steamId, int duration, any additionalData);
+typedef VIPCheckedCallback = function void(int vipClient, bool expired);
 
 Database connection;
 
@@ -500,31 +501,17 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 
 public Action OnClientPreAdminCheck(int client)
 {
-	if(connection == null)
+	if(connection == null || GetUserAdmin(client) != INVALID_ADMIN_ID)
 		return Plugin_Continue;
 
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
-		return Plugin_Continue;
-
-	CheckVIP(client);
-	FetchVIP(client);
+	CheckVIP(client, VIPChecked);
 	return Plugin_Handled;
 }
 
-void CheckVIP(int client)
+void CheckVIP(int vipClient, VIPCheckedCallback callback)
 {
-	if(connection == null)
-		return;
-
-	DataPack pack = new DataPack();
-
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
-	pack.WriteString(steamId);
-
-	char name[MAX_NAME_LENGTH];
-	GetClientName(client, name, sizeof(name));
-	pack.WriteString(name);
+	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
@@ -536,39 +523,44 @@ void CheckVIP(int client)
 	else
 		Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;", escapedSteamId);
 
+	DataPack pack = new DataPack();
+	pack.WriteCell(vipClient);
+	pack.WriteFunction(callback);
+
 	connection.Query(CallbackCheckVIP, query, pack, DBPrio_High);
 }
 
 public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any data)
 {
-	if(result == null)
-	{
+	if(result == null) {
 		LogError("Error while checking VIP! Error: %s", error);
 		return;
 	}
 
-	if(result.AffectedRows != 1)
-		return;
-
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
+	int vipClient = pack.ReadCell();
 
-	char steamId[64];
-	pack.ReadString(steamId, sizeof(steamId));
+	bool expired = result.AffectedRows != 1;
 
-	char name[MAX_NAME_LENGTH];
-	pack.ReadString(name, sizeof(name));
-
-	char reason[256];
-	strcopy(reason, sizeof(reason), "Time expired!");
-
-	RemoveVIP(0, steamId, name, reason);
+	Call_StartFunction(null, pack.ReadFunction());
+	Call_PushCell(vipClient);
+	Call_PushCell(expired);
+	Call_Finish();
 }
 
-void FetchVIP(int client)
+public void VIPChecked(int vipClient, bool expired)
+{
+	if(expired)
+		FetchVIP(vipClient);
+	else
+		RemoveVIPByExpiration(vipClient);
+}
+
+void FetchVIP(int vipClient)
 {
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
+	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
@@ -576,15 +568,14 @@ void FetchVIP(int client)
 
 	char query[128];
 	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
-	connection.Query(CallbackFetchVIP, query, client, DBPrio_High);
+	connection.Query(CallbackFetchVIP, query, vipClient, DBPrio_High);
 }
 
 public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
 {
-	int client = data;
+	int vipClient = data;
 
-	if(result == null)
-	{
+	if(result == null) {
 		LogError("Error while fetching VIP! Error: %s", error);
 		return;
 	}
@@ -592,8 +583,19 @@ public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any 
 	if(result.AffectedRows != 1)
 		return;
 
-	AddVIPToAdminCache(client);
-	NotifyPostAdminCheck(client);
+	AddVIPToAdminCache(vipClient);
+	NotifyPostAdminCheck(vipClient);
+}
+
+void RemoveVIPByExpiration(int vipClient)
+{
+	char name[MAX_NAME_LENGTH];
+	GetClientName(vipClient, name, sizeof(name));
+
+	char steamId[64];
+	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
+
+	RemoveVIP(0, name, steamId, "Time expired");
 }
 
 public int OnRebuildAdminCache(AdminCachePart part)
