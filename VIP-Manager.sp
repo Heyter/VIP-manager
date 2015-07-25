@@ -28,7 +28,7 @@ public void OnPluginStart()
 	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
 
 	RegAdminCmd("sm_vipm", Cmd_PrintHelp, ADMFLAG_ROOT, "Lists all commands.");
-	RegAdminCmd("sm_vipm_add", CmdAddVIP, ADMFLAG_ROOT, "Add a VIP.");
+	RegAdminCmd("sm_vipm_add", Cmd_AddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", CmdRemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
 	RegAdminCmd("sm_vipm_check", CmdCheckVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
@@ -51,43 +51,31 @@ public Action Cmd_PrintHelp(int client, int args)
 	return Plugin_Handled;
 }
 
-public Action CmdAddVIP(int client, int args)
+public Action Cmd_AddVIP(int client, int args)
 {
-	if(connection == null)
-	{
+	if(connection == null) {
 		ReplyToCommand(client, "There is currently no connection to the SQL server");
 		return Plugin_Handled;
 	}
 
-	if(args < 2)
-	{
+	if(args < 2) {
 		ReplyToCommand(client, "Usage: sm_vipm_add <\"name\"> <minutes> [\"SteamId\"]");
 		return Plugin_Handled;
 	}
 
-	int vip = 0;
 	char name[64];
 	char steamId[64];
-	bool addToCache = false;
 
-	if(args == 2)
-	{
+	if(args == 2) {
 		char searchName[64];
 		GetCmdArg(1, searchName, sizeof(searchName));
 
-		vip = FindPlayer(searchName);
-		if(vip == -1)
-		{
+		if(!SearchClient(searchName, name, sizeof(name), steamId, sizeof(steamId))) {
 			ReplyToCommand(client, "Can't find client '%s'", searchName);
 			return Plugin_Handled;
 		}
-
-		GetClientName(vip, name, sizeof(name));
-		GetClientAuthId(vip, AuthId_Engine, steamId, sizeof(steamId));
-		addToCache = true;
 	}
-	else
-	{
+	else {
 		GetCmdArg(1, name, sizeof(name));
 		GetCmdArg(3, steamId, sizeof(steamId));
 	}
@@ -95,10 +83,13 @@ public Action CmdAddVIP(int client, int args)
 	char durationString[16];
 	GetCmdArg(2, durationString, sizeof(durationString));
 
-	int duration = StringToInt(durationString);
-	if(duration < -1)
-		duration = -1;
+	AddVIP(client, name, steamId, StringToInt(durationString));
 
+	return Plugin_Handled;
+}
+
+void AddVIP(int caller, const char[] name, const char[] steamId, int duration)
+{
 	int len = strlen(name) * 2 + 1;
 	char[] escapedName = new char[len];
 	connection.Escape(name, escapedName, len);
@@ -107,32 +98,29 @@ public Action CmdAddVIP(int client, int args)
 	char[] escapedSteamId = new char[len];
 	connection.Escape(steamId, escapedSteamId, len);
 
+	if(duration < -1)
+		duration = -1;
+
 	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-	pack.WriteCell(vip);
+	pack.WriteCell(caller);
 	pack.WriteString(name);
 	pack.WriteString(steamId);
 	pack.WriteCell(duration);
-	pack.WriteCell(addToCache);
 
 	char query[512];
 	Format(query, sizeof(query), "INSERT INTO vips (steamId, name, duration) VALUES ('%s', '%s', %i);", escapedSteamId, escapedName, duration);
-	connection.Query(CallbackAddVIP, query, pack);
-
-	return Plugin_Handled;
+	connection.Query(AddVIPCallback, query, pack);
 }
 
-public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any data)
+public void AddVIPCallback(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
-	int client = pack.ReadCell();
-	int vip = pack.ReadCell();
+	int caller = pack.ReadCell();
 
-	if(result == null)
-	{
+	if(result == null) {
 		LogError("Error while adding VIP! Error: %s", error);
-		ReplyClient(client, "Can't add VIP! %s", error);
+		ReplyClient(caller, "Can't add VIP! %s", error);
 		return;
 	}
 
@@ -144,22 +132,25 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 
 	int duration = pack.ReadCell();
 
+	int vipClient = FindPlayer(name);
+	if(AddVIPToAdminCache(vipClient))
+		ReplyClient(caller, "Successfully added '%s' as a VIP for %i minutes!", name, duration);
+	else
+		ReplyClient(caller, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", name);
+
 	Call_StartForward(onAddVIPForward);
-	Call_PushCell(client);
+	Call_PushCell(caller);
 	Call_PushString(name);
 	Call_PushString(steamId);
 	Call_PushCell(duration);
 	Call_Finish();
-
-	bool addToCache = pack.ReadCell();
-	if(addToCache && !AddVipToAdminCache(vip))
-		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", name);
-	else
-		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", name, duration);
 }
 
-bool AddVipToAdminCache(int client)
+bool AddVIPToAdminCache(int client)
 {
+	if(!IsClientConnected(client))
+		return false;
+
 	char steamId[64];
 	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 
@@ -168,16 +159,18 @@ bool AddVipToAdminCache(int client)
 		RemoveAdmin(admin);
 
 	GroupId group = FindAdmGroup("VIP");
-	if(group == INVALID_GROUP_ID)
-	{
+	if(group == INVALID_GROUP_ID) {
 		PrintToServer("[VIP-Manager] Couldn't found group 'VIP'! Please create a group called 'VIP'.");
 		return false;
 	}
 
 	admin = CreateAdmin();
-	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
-
 	AdminInheritGroup(admin, group);
+	if(!BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId)) {
+		RemoveAdmin(admin);
+		return false;
+	}
+
 	RunAdminCacheChecks(client);
 	return true;
 }
@@ -634,7 +627,7 @@ public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any 
 	if(result.AffectedRows != 1)
 		return;
 
-	AddVipToAdminCache(client);
+	AddVIPToAdminCache(client);
 	NotifyPostAdminCheck(client);
 }
 
@@ -674,7 +667,18 @@ bool DriverIsSQLite()
 	return StrEqual(identifier, "sqlite");
 }
 
-int FindPlayer(char[] searchTerm)
+bool SearchClient(const char[] search, char[] name, nameLength, char[] steamId, steamIdLength)
+{
+	int client = FindPlayer(search);
+	if(client == -1)
+		return false;
+
+	GetClientName(client, name, nameLength);
+	GetClientAuthId(client, AuthId_Engine, steamId, steamIdLength);
+	return true;
+}
+
+int FindPlayer(const char[] searchTerm)
 {
 	for(int i = 1; i < MaxClients; i++)
 	{
