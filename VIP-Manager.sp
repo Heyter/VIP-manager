@@ -227,11 +227,11 @@ public void VIPSearchingResult(Database db, DBResultSet result, char[] error, an
 	char searchTerm[MAX_NAME_LENGTH];
 	pack.ReadString(searchTerm, sizeof(searchTerm));
 
-	if(result.AffectedRows == 0) {
+	if(result.RowCount == 0) {
 		ReplyClient(caller, "Can't find a VIP with the name '%s'!", searchTerm);
 		return;
 	}
-	else if(result.AffectedRows > 1) {
+	else if(result.RowCount > 1) {
 		ReplyClient(caller, "Found more than one VIP with the name '%s'! Please specify the name more accurately!", searchTerm);
 		return;
 	}
@@ -452,7 +452,7 @@ public void CallbackCheckForExpiredVIPs(Database db, DBResultSet result, char[] 
 		return;
 	}
 
-	if(result.AffectedRows <= 0) {
+	if(result.RowCount <= 0) {
 		ReplyClient(caller, "No VIP is expired.");
 		return;
 	}
@@ -544,7 +544,7 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	pack.Reset();
 	int vipClient = pack.ReadCell();
 
-	bool expired = result.AffectedRows != 1;
+	bool expired = result.RowCount != 1;
 
 	Call_StartFunction(null, pack.ReadFunction());
 	Call_PushCell(vipClient);
@@ -586,7 +586,7 @@ public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any 
 		return;
 	}
 
-	if(result.AffectedRows != 1)
+	if(result.RowCount != 1)
 		return;
 
 	AddVIPToAdminCache(vipClient);
