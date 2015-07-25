@@ -674,3 +674,12 @@ void ReplyClient(int client, const char[] format, any ...)
 	else
 		PrintToChat(client, message);
 }
+
+bool DriverIsSQLite()
+{
+	DBDriver driver = connection.Driver;
+	char identifier[64];
+	driver.GetIdentifier(identifier, sizeof(identifier));
+
+	return StrEqual(identifier, "sqlite");
+}
