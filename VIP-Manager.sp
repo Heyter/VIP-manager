@@ -501,7 +501,7 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 
 public Action OnClientPreAdminCheck(int client)
 {
-	if(connection == null || GetUserAdmin(client) != INVALID_ADMIN_ID)
+	if(connection == null || ClientIsAdmin(client))
 		return Plugin_Continue;
 
 	CheckVIP(client, VIPChecked);
@@ -510,6 +510,9 @@ public Action OnClientPreAdminCheck(int client)
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
 {
+	if(!IsClientConnected(vipClient))
+		return;
+
 	char steamId[64];
 	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
 
@@ -559,6 +562,9 @@ public void VIPChecked(int vipClient, bool expired)
 
 void FetchVIP(int vipClient)
 {
+	if(!IsClientConnected(vipClient) || ClientIsAdmin(vipClient))
+		return;
+
 	char steamId[64];
 	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
 
@@ -607,10 +613,7 @@ public int OnRebuildAdminCache(AdminCachePart part)
 void FetchAvailableVIPs()
 {
 	for(int i = 1; i < MaxClients; i++)
-	{
-		if(IsClientConnected(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
-			FetchVIP(i);
-	}
+		FetchVIP(i);
 }
 
 void ReplyClient(int client, const char[] format, any ...)
@@ -664,4 +667,9 @@ bool ClientNameContainsString(int client, const char[] str)
 	GetClientName(client, playerName, sizeof(playerName));
 
 	return StrContains(playerName, str, false) > -1;
+}
+
+bool ClientIsAdmin(int client)
+{
+	return GetUserAdmin(client) != INVALID_ADMIN_ID;
 }
