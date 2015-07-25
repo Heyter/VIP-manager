@@ -680,17 +680,21 @@ bool SearchClient(const char[] search, char[] name, nameLength, char[] steamId, 
 
 int FindPlayer(const char[] searchTerm)
 {
-	for(int i = 1; i < MaxClients; i++)
-	{
-		if(!IsClientConnected(i))
-			continue;
-
-		char playerName[64];
-		GetClientName(i, playerName, sizeof(playerName));
-
-		if(StrContains(playerName, searchTerm, false) > -1)
-			return i;
+	for(int client = 1; client < MaxClients; client++) {
+		if(ClientNameContainsString(client, searchTerm))
+			return client;
 	}
 
 	return -1;
+}
+
+bool ClientNameContainsString(int client, const char[] str)
+{
+	if(!IsClientConnected(i))
+		return false;
+
+	char playerName[MAX_NAME_LENGTH];
+	GetClientName(i, playerName, sizeof(playerName));
+
+	return StrContains(playerName, searchTerm, false) > -1;
 }
