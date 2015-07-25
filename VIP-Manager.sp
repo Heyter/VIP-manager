@@ -63,11 +63,11 @@ public Action Cmd_AddVIP(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	char steamId[64];
 
 	if(args == 2) {
-		char searchName[64];
+		char searchName[MAX_NAME_LENGTH];
 		GetCmdArg(1, searchName, sizeof(searchName));
 
 		if(!SearchClient(searchName, name, sizeof(name), steamId, sizeof(steamId))) {
@@ -124,7 +124,7 @@ public void AddVIPCallback(Database db, DBResultSet result, char[] error, any da
 		return;
 	}
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	pack.ReadString(name, sizeof(name));
 
 	char steamId[64];
@@ -189,7 +189,7 @@ public Action CmdRemoveVIP(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char searchName[64];
+	char searchName[MAX_NAME_LENGTH];
 	GetCmdArg(1, searchName, sizeof(searchName));
 
 	char query[128];
@@ -216,7 +216,7 @@ public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, 
 		return;
 	}
 
-	char searchName[64];
+	char searchName[MAX_NAME_LENGTH];
 	pack.ReadString(searchName, sizeof(searchName));
 
 	if(result.AffectedRows == 0)
@@ -235,10 +235,10 @@ public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, 
 	char steamId[64];
 	result.FetchString(0, steamId, sizeof(steamId));
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	result.FetchString(1, name, sizeof(name));
 
-	char adminName[64];
+	char adminName[MAX_NAME_LENGTH];
 	GetClientName(client, adminName, sizeof(adminName));
 
 	char reason[256];
@@ -282,7 +282,7 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 	char steamId[64];
 	pack.ReadString(steamId, sizeof(steamId));
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	pack.ReadString(name, sizeof(name));
 
 	char reason[256];
@@ -326,7 +326,7 @@ public Action CmdChangeVIPTime(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char searchName[64];
+	char searchName[MAX_NAME_LENGTH];
 	GetCmdArg(2, searchName, sizeof(searchName));
 
 	char minutesString[8];
@@ -362,7 +362,7 @@ public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error,
 		return;
 	}
 
-	char searchName[64];
+	char searchName[MAX_NAME_LENGTH];
 	pack.ReadString(searchName, sizeof(searchName));
 
 	if(result.AffectedRows == 0)
@@ -381,7 +381,7 @@ public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error,
 	char steamId[64];
 	result.FetchString(0, steamId, sizeof(steamId));
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	result.FetchString(1, name, sizeof(name));
 
 	int duration = result.FetchInt(3);
@@ -427,7 +427,7 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 		return;
 	}
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	pack.ReadString(name, sizeof(name));
 
 	char steamId[64];
@@ -490,7 +490,7 @@ public void CallbackCheckVIPs(Database db, DBResultSet result, char[] error, any
 		char steamId[64];
 		result.FetchString(0, steamId, sizeof(steamId));
 
-		char name[64];
+		char name[MAX_NAME_LENGTH];
 		result.FetchString(1, name, sizeof(name));
 
 		char reason[256];
@@ -557,7 +557,7 @@ void CheckVIP(int client)
 	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 	pack.WriteString(steamId);
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	GetClientName(client, name, sizeof(name));
 	pack.WriteString(name);
 
@@ -591,7 +591,7 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	char steamId[64];
 	pack.ReadString(steamId, sizeof(steamId));
 
-	char name[64];
+	char name[MAX_NAME_LENGTH];
 	pack.ReadString(name, sizeof(name));
 
 	char reason[256];
@@ -690,11 +690,11 @@ int FindPlayer(const char[] searchTerm)
 
 bool ClientNameContainsString(int client, const char[] str)
 {
-	if(!IsClientConnected(i))
+	if(!IsClientConnected(client))
 		return false;
 
 	char playerName[MAX_NAME_LENGTH];
-	GetClientName(i, playerName, sizeof(playerName));
+	GetClientName(client, playerName, sizeof(playerName));
 
-	return StrContains(playerName, searchTerm, false) > -1;
+	return StrContains(playerName, str, false) > -1;
 }
