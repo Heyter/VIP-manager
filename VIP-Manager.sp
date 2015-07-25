@@ -159,7 +159,7 @@ public Action CmdRemoveVIP(int client, int args)
 	GetCmdArg(1, searchName, sizeof(searchName));
 
 	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
@@ -203,7 +203,7 @@ public Action CmdChangeVIPTime(int client, int args)
 	pack.WriteCell(minutes);
 
 	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%s%s%s';", "%", searchName, "%");
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
 
 	connection.Query(CallbackPreChangeTime, query, pack);
 	return Plugin_Handled;
