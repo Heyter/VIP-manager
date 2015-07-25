@@ -2,7 +2,7 @@
 
 #define Version "2.1"
 
-typedef VIPSelectedCallback = function void(int caller, const char[] name, const char[] steamId, int duration);
+typedef VIPSelectedCallback = function void(int caller, const char[] name, const char[] steamId, int duration, any additionalData);
 
 Database connection;
 
@@ -32,7 +32,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm", Cmd_PrintHelp, ADMFLAG_ROOT, "Lists all commands.");
 	RegAdminCmd("sm_vipm_add", Cmd_AddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", Cmd_RemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
-	RegAdminCmd("sm_vipm_time", CmdChangeVIPTime, ADMFLAG_ROOT, "Change the duration for a VIP.");
+	RegAdminCmd("sm_vipm_time", Cmd_ChangeVIPDuration, ADMFLAG_ROOT, "Change the duration for a VIP.");
 	RegAdminCmd("sm_vipm_check", CmdCheckVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
 
 	onAddVIPForward = CreateGlobalForward("OnVIPAdded", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
@@ -197,7 +197,7 @@ public Action Cmd_RemoveVIP(int client, int args)
 	return Plugin_Handled;
 }
 
-void SearchVIPByName(int caller, const char[] searchTerm, VIPSelectedCallback callback)
+void SearchVIPByName(int caller, const char[] searchTerm, VIPSelectedCallback callback, any additionalData = 0)
 {
 	char query[128];
 	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchTerm);
@@ -206,6 +206,7 @@ void SearchVIPByName(int caller, const char[] searchTerm, VIPSelectedCallback ca
 	pack.WriteCell(caller);
 	pack.WriteString(searchTerm);
 	pack.WriteFunction(callback);
+	pack.WriteCell(additionalData);
 
 	connection.Query(VIPSearchingResult, query, pack);
 }
@@ -249,10 +250,11 @@ public void VIPSearchingResult(Database db, DBResultSet result, char[] error, an
 	Call_PushString(name);
 	Call_PushString(steamId);
 	Call_PushCell(duration);
+	Call_PushCell(pack.ReadCell());
 	Call_Finish();
 }
 
-public void RemoveVIPByCommand(int caller, const char[] name, const char[] steamId, int duration)
+public void RemoveVIPByCommand(int caller, const char[] name, const char[] steamId, int duration, any nothing)
 {
 	char adminName[MAX_NAME_LENGTH];
 	GetClientName(caller, adminName, sizeof(adminName));
@@ -321,25 +323,15 @@ void RemoveVIPFromAdminCache(char[] steamId)
 		RemoveAdmin(admin);
 }
 
-public Action CmdChangeVIPTime(int client, int args)
+public Action Cmd_ChangeVIPDuration(int client, int args)
 {
-	if(args != 3)
-	{
+	if(args != 3) {
 		ReplyToCommand(client, "Usage: sm_vipm_time <set|add|sub> <\"name\"> <minutes>");
 		return Plugin_Handled;
 	}
 
-	char mode[8];
-	GetCmdArg(1, mode, sizeof(mode));
-
-	if(!StrEqual(mode, "set", false) && !StrEqual(mode, "add", false) && !StrEqual(mode, "sub", false))
-	{
-		ReplyToCommand(client, "Unknown mode '%s'! Please use 'set', 'add' or 'sub'.", mode);
-		return Plugin_Handled;
-	}
-
-	char searchName[MAX_NAME_LENGTH];
-	GetCmdArg(2, searchName, sizeof(searchName));
+	char searchTerm[MAX_NAME_LENGTH];
+	GetCmdArg(2, searchTerm, sizeof(searchTerm));
 
 	char minutesString[8];
 	GetCmdArg(3, minutesString, sizeof(minutesString));
@@ -348,80 +340,50 @@ public Action CmdChangeVIPTime(int client, int args)
 	if(minutes < 0)
 		minutes *= -1;
 
-	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-	pack.WriteString(searchName);
-	pack.WriteString(mode);
-	pack.WriteCell(minutes);
+	char mode[8];
+	GetCmdArg(1, mode, sizeof(mode));
 
-	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
+	if(StrEqual(mode, "set", false))
+		SearchVIPByName(client, searchTerm, SetVIPDuration, minutes);
+	else if(StrEqual(mode, "add", false))
+		SearchVIPByName(client, searchTerm, AddVIPDuration, minutes);
+	else if(StrEqual(mode, "sub", false))
+		SearchVIPByName(client, searchTerm, SubVIPDuration, minutes);
+	else
+		ReplyToCommand(client, "Unknown mode '%s'! Please use 'set', 'add' or 'sub'.", mode);
 
-	connection.Query(CallbackPreChangeTime, query, pack);
 	return Plugin_Handled;
 }
 
-public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error, any data)
+public void SetVIPDuration(int caller, const char[] name, const char[] steamId, int duration, any newDuration)
 {
-	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
-	int client = pack.ReadCell();
+	ChangeVIPDuration(caller, name, steamId, "set", duration, newDuration);
+}
 
-	if(result == null)
-	{
-		LogError("Error while selecting VIP for time manipulation! Error: %s", error);
-		ReplyClient(client, "Can't change time for VIP! %s", error);
-		return;
-	}
+public void AddVIPDuration(int caller, const char[] name, const char[] steamId, int duration, any durationToAdd)
+{
+	int newDuration = duration + durationToAdd;
+	ChangeVIPDuration(caller, name, steamId, "add", duration, newDuration);
+}
 
-	char searchName[MAX_NAME_LENGTH];
-	pack.ReadString(searchName, sizeof(searchName));
+public void SubVIPDuration(int caller, const char[] name, const char[] steamId, int duration, any durationToSub)
+{
+	int newDuration = duration + durationToSub;
+	ChangeVIPDuration(caller, name, steamId, "sub", duration, newDuration);
+}
 
-	if(result.AffectedRows == 0)
-	{
-		ReplyClient(client, "Can't find a VIP with the name '%s'!", searchName);
-		return;
-	}
-	else if(result.AffectedRows > 1)
-	{
-		ReplyClient(client, "Found more than one VIP with the name '%s'! Please specify the name more accurately!", searchName);
-		return;
-	}
+void ChangeVIPDuration(int caller, const char[] name, const char[] steamId, const char[] mode, int oldDuration, int newDuration)
+{
+	char query[128];
+	Format(query, sizeof(query), "UPDATE vips SET duration = %i WHERE steamId = '%s'", newDuration, steamId);
 
-	result.FetchRow();
-
-	char steamId[64];
-	result.FetchString(0, steamId, sizeof(steamId));
-
-	char name[MAX_NAME_LENGTH];
-	result.FetchString(1, name, sizeof(name));
-
-	int duration = result.FetchInt(3);
-
-	char mode[8];
-	pack.ReadString(mode, sizeof(mode));
-
-	int newDuration;
-	int minutes = pack.ReadCell();
-	if(StrEqual(mode, "set", false))
-		newDuration = minutes;
-	else if(StrEqual(mode, "add"))
-		newDuration = duration + minutes;
-	else if(StrEqual(mode, "sub"))
-		newDuration = duration - minutes;
-
-	delete pack;
-	pack = new DataPack();
-
-	pack.WriteCell(client);
+	DataPack pack = new DataPack();
+	pack.WriteCell(caller);
 	pack.WriteString(name);
 	pack.WriteString(steamId);
 	pack.WriteString(mode);
-	pack.WriteCell(duration);
+	pack.WriteCell(oldDuration);
 	pack.WriteCell(newDuration);
-
-	char query[128];
-	Format(query, sizeof(query), "UPDATE vips SET duration = %i WHERE steamId = '%s'", newDuration, steamId);
 
 	connection.Query(CallbackChangeTime, query, pack);
 }
@@ -430,12 +392,11 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
-	int client = pack.ReadCell();
+	int caller = pack.ReadCell();
 
-	if(result == null)
-	{
+	if(result == null) {
 		LogError("Error while manipulate VIP time! Error: %s", error);
-		ReplyClient(client, "Can't change time for VIP! %s", error);
+		ReplyClient(caller, "Can't change time for VIP! %s", error);
 		return;
 	}
 
@@ -448,19 +409,19 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 	char mode[8];
 	pack.ReadString(mode, sizeof(mode));
 
-	int duration = pack.ReadCell();
+	int oldDuration = pack.ReadCell();
 	int newDuration = pack.ReadCell();
 
 	Call_StartForward(onDurationChangedForward);
-	Call_PushCell(client);
+	Call_PushCell(caller);
 	Call_PushString(name);
 	Call_PushString(steamId);
 	Call_PushString(mode);
-	Call_PushCell(duration);
+	Call_PushCell(oldDuration);
 	Call_PushCell(newDuration);
 	Call_Finish();
 
-	ReplyClient(client, "Changed time for VIP '%s' from %i to %i minutes!", name, duration, newDuration);
+	ReplyClient(caller, "Changed time for VIP '%s' from %i to %i minutes!", name, oldDuration, newDuration);
 }
 
 public Action CmdCheckVIPs(int client, int args)
