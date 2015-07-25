@@ -151,15 +151,11 @@ public void AddVIPCallback(Database db, DBResultSet result, char[] error, any da
 
 bool AddVIPToAdminCache(int client)
 {
-	if(client < 1 || !IsClientConnected(client))
+	if(client < 1 || !IsClientConnected(client) || ClientIsAdmin(client))
 		return false;
 
 	char steamId[64];
 	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
-
-	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
-	if(admin != INVALID_ADMIN_ID)
-		RemoveAdmin(admin);
 
 	GroupId group = FindAdmGroup("VIP");
 	if(group == INVALID_GROUP_ID) {
@@ -167,7 +163,7 @@ bool AddVIPToAdminCache(int client)
 		return false;
 	}
 
-	admin = CreateAdmin();
+	AdminId admin = CreateAdmin();
 	AdminInheritGroup(admin, group);
 	if(!BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId)) {
 		RemoveAdmin(admin);
@@ -499,13 +495,12 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 		LogError("Error while creating table! Error: %s", error);
 }
 
-public Action OnClientPreAdminCheck(int client)
+public void OnClientPostAdminFilter(int client)
 {
-	if(connection == null || ClientIsAdmin(client))
-		return Plugin_Continue;
+	if(connection == null)
+		return;
 
 	CheckVIP(client, VIPChecked);
-	return Plugin_Handled;
 }
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
@@ -544,7 +539,7 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	pack.Reset();
 	int vipClient = pack.ReadCell();
 
-	bool expired = result.RowCount != 1;
+	bool expired = result.RowCount == 0;
 
 	Call_StartFunction(null, pack.ReadFunction());
 	Call_PushCell(vipClient);
@@ -590,7 +585,6 @@ public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any 
 		return;
 
 	AddVIPToAdminCache(vipClient);
-	NotifyPostAdminCheck(vipClient);
 }
 
 void RemoveVIPByExpiration(int vipClient)
