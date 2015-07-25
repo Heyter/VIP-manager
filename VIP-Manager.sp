@@ -151,7 +151,7 @@ public void AddVIPCallback(Database db, DBResultSet result, char[] error, any da
 
 bool AddVIPToAdminCache(int client)
 {
-	if(!IsClientConnected(client))
+	if(client < 1 || !IsClientConnected(client))
 		return false;
 
 	char steamId[64];
@@ -510,7 +510,7 @@ public Action OnClientPreAdminCheck(int client)
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
 {
-	if(!IsClientConnected(vipClient))
+	if(vipClient < 1 || !IsClientConnected(vipClient))
 		return;
 
 	char steamId[64];
@@ -562,7 +562,7 @@ public void VIPChecked(int vipClient, bool expired)
 
 void FetchVIP(int vipClient)
 {
-	if(!IsClientConnected(vipClient) || ClientIsAdmin(vipClient))
+	if(vipClient < 1 || !IsClientConnected(vipClient) || ClientIsAdmin(vipClient))
 		return;
 
 	char steamId[64];
@@ -660,7 +660,7 @@ int FindPlayer(const char[] searchTerm)
 
 bool ClientNameContainsString(int client, const char[] str)
 {
-	if(!IsClientConnected(client))
+	if(client < 1 || !IsClientConnected(client))
 		return false;
 
 	char playerName[MAX_NAME_LENGTH];
