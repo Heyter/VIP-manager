@@ -33,7 +33,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm_add", Cmd_AddVIP, ADMFLAG_ROOT, "Add a VIP.");
 	RegAdminCmd("sm_vipm_rm", Cmd_RemoveVIP, ADMFLAG_ROOT, "Remove a VIP.");
 	RegAdminCmd("sm_vipm_time", Cmd_ChangeVIPDuration, ADMFLAG_ROOT, "Change the duration for a VIP.");
-	RegAdminCmd("sm_vipm_check", CmdCheckVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
+	RegAdminCmd("sm_vipm_check", Cmd_CheckForExpiredVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
 
 	onAddVIPForward = CreateGlobalForward("OnVIPAdded", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
 	onRemoveVIPForward = CreateGlobalForward("OnVIPRemoved", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String);
@@ -424,7 +424,7 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 	ReplyClient(caller, "Changed time for VIP '%s' from %i to %i minutes!", name, oldDuration, newDuration);
 }
 
-public Action CmdCheckVIPs(int client, int args)
+public Action Cmd_CheckForExpiredVIPs(int client, int args)
 {
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
@@ -435,44 +435,38 @@ public Action CmdCheckVIPs(int client, int args)
 	else
 		Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;");
 
-	connection.Query(CallbackCheckVIPs, query, pack);
+	connection.Query(CallbackCheckForExpiredVIPs, query, pack);
 	return Plugin_Handled;
 }
 
-public void CallbackCheckVIPs(Database db, DBResultSet result, char[] error, any data)
+public void CallbackCheckForExpiredVIPs(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
-	int client = pack.ReadCell();
+	int caller = pack.ReadCell();
 
-	if(result == null)
-	{
+	if(result == null) {
 		LogError("Error while checking VIPs! Error: %s", error);
-		ReplyClient(client, "Can't check VIPs! %s", error);
+		ReplyClient(caller, "Can't check VIPs! %s", error);
 		return;
 	}
 
-	if(result.AffectedRows <= 0)
-	{
-		ReplyClient(client, "No VIP is expired.");
+	if(result.AffectedRows <= 0) {
+		ReplyClient(caller, "No VIP is expired.");
 		return;
 	}
 
-	while(result.FetchRow())
-	{
+	while(result.FetchRow()) {
 		char steamId[64];
 		result.FetchString(0, steamId, sizeof(steamId));
 
 		char name[MAX_NAME_LENGTH];
 		result.FetchString(1, name, sizeof(name));
 
-		char reason[256];
-		strcopy(reason, sizeof(reason), "Time expired!");
-
-		RemoveVIP(client, steamId, name, reason);
+		RemoveVIP(caller, steamId, name, "Time expired!");
 	}
 
-	ReplyClient(client, "Removed all expired VIPs!");
+	ReplyClient(caller, "Removed all expired VIPs!");
 }
 
 void ConnectToDatabase()
