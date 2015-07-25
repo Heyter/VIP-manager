@@ -40,25 +40,6 @@ public void OnPluginStart()
 	ConnectToDatabase();
 }
 
-public int OnRebuildAdminCache(AdminCachePart part)
-{
-	if(part == AdminCache_Admins)
-		FetchAvailableVIPs();
-}
-
-public Action OnClientPreAdminCheck(int client)
-{
-	if(connection == null)
-		return Plugin_Continue;
-
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
-		return Plugin_Continue;
-
-	CheckVIP(client);
-	FetchVIP(client);
-	return Plugin_Handled;
-}
-
 public Action CmdVIPM(int client, int args)
 {
 	ReplyToCommand(client, "sm_vipm | Lists all commands.");
@@ -141,104 +122,6 @@ public Action CmdAddVIP(int client, int args)
 	return Plugin_Handled;
 }
 
-public Action CmdRemoveVIP(int client, int args)
-{
-	if(connection == null)
-	{
-		ReplyToCommand(client, "There is currently no connection to the SQL server");
-		return Plugin_Handled;
-	}
-
-	if(args < 1)
-	{
-		ReplyToCommand(client, "Usage: sm_vipm_rm <\"name\">");
-		return Plugin_Handled;
-	}
-
-	char searchName[64];
-	GetCmdArg(1, searchName, sizeof(searchName));
-
-	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
-
-	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-	pack.WriteString(searchName);
-
-	connection.Query(CallbackPreRemoveVIP, query, pack);
-	return Plugin_Handled;
-}
-
-public Action CmdChangeVIPTime(int client, int args)
-{
-	if(args != 3)
-	{
-		ReplyToCommand(client, "Usage: sm_vipm_time <set|add|sub> <\"name\"> <minutes>");
-		return Plugin_Handled;
-	}
-
-	char mode[8];
-	GetCmdArg(1, mode, sizeof(mode));
-
-	if(!StrEqual(mode, "set", false) && !StrEqual(mode, "add", false) && !StrEqual(mode, "sub", false))
-	{
-		ReplyToCommand(client, "Unknown mode '%s'! Please use 'set', 'add' or 'sub'.", mode);
-		return Plugin_Handled;
-	}
-
-	char searchName[64];
-	GetCmdArg(2, searchName, sizeof(searchName));
-
-	char minutesString[8];
-	GetCmdArg(3, minutesString, sizeof(minutesString));
-
-	int minutes = StringToInt(minutesString);
-	if(minutes < 0)
-		minutes *= -1;
-
-	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-	pack.WriteString(searchName);
-	pack.WriteString(mode);
-	pack.WriteCell(minutes);
-
-	char query[128];
-	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
-
-	connection.Query(CallbackPreChangeTime, query, pack);
-	return Plugin_Handled;
-}
-
-public Action CmdCheckVIPs(int client, int args)
-{
-	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-
-	char query[128];
-	if(DriverIsSQLite())
-		Format(query, sizeof(query), "SELECT * FROM vips WHERE (strftime('%%s', joindate, duration || ' minutes') - strftime('%%s', 'now')) < 0 AND duration >= 0;");
-	else
-		Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;");
-
-	connection.Query(CallbackCheckVIPs, query, pack);
-	return Plugin_Handled;
-}
-
-public void CallbackConnect(Database db, char[] error, any data)
-{
-	if(db == null)
-		LogError("Can't connect to server. Error: %s", error);
-
-	connection = db;
-	CreateTableIfExists();
-}
-
-public void CallbackCreateTable(Database db, DBResultSet result, char[] error, any data)
-{
-	if(result == null)
-		LogError("Error while creating table! Error: %s", error);
-}
-
 public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
@@ -273,6 +156,58 @@ public void CallbackAddVIP(Database db, DBResultSet result, char[] error, any da
 		ReplyClient(client, "Added '%s' as a VIP in database, but can't added VIP in admin cache!", name);
 	else
 		ReplyClient(client, "Successfully added '%s' as a VIP for %i minutes!", name, duration);
+}
+
+bool AddVipToAdminCache(int client)
+{
+	char steamId[64];
+	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
+
+	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
+	if(admin != INVALID_ADMIN_ID)
+		RemoveAdmin(admin);
+
+	GroupId group = FindAdmGroup("VIP");
+	if(group == INVALID_GROUP_ID)
+	{
+		PrintToServer("[VIP-Manager] Couldn't found group 'VIP'! Please create a group called 'VIP'.");
+		return false;
+	}
+
+	admin = CreateAdmin();
+	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
+
+	AdminInheritGroup(admin, group);
+	RunAdminCacheChecks(client);
+	return true;
+}
+
+public Action CmdRemoveVIP(int client, int args)
+{
+	if(connection == null)
+	{
+		ReplyToCommand(client, "There is currently no connection to the SQL server");
+		return Plugin_Handled;
+	}
+
+	if(args < 1)
+	{
+		ReplyToCommand(client, "Usage: sm_vipm_rm <\"name\">");
+		return Plugin_Handled;
+	}
+
+	char searchName[64];
+	GetCmdArg(1, searchName, sizeof(searchName));
+
+	char query[128];
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteString(searchName);
+
+	connection.Query(CallbackPreRemoveVIP, query, pack);
+	return Plugin_Handled;
 }
 
 public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, any data)
@@ -319,6 +254,23 @@ public void CallbackPreRemoveVIP(Database db, DBResultSet result, char[] error, 
 	RemoveVip(client, steamId, name, reason);
 }
 
+void RemoveVip(int client, char[] steamId, char[] name, char[] reason)
+{
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteString(steamId);
+	pack.WriteString(name);
+	pack.WriteString(reason);
+
+	int len = strlen(steamId) * 2 + 1;
+	char[] escapedSteamId = new char[len];
+	connection.Escape(steamId, escapedSteamId, len);
+
+	char query[128];
+	Format(query, sizeof(query), "DELETE FROM vips WHERE steamId = '%s';", escapedSteamId);
+	connection.Query(CallbackRemoveVIP, query, pack);
+}
+
 public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
@@ -353,6 +305,55 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 	Call_Finish();
 
 	ReplyClient(client, "Removed VIP %s(%s)! Reason: %s", name, steamId, reason);
+}
+
+void RemoveVipFromAdminCache(char[] steamId)
+{
+	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
+	if(admin == INVALID_ADMIN_ID)
+		return;
+
+	RemoveAdmin(admin);
+}
+
+public Action CmdChangeVIPTime(int client, int args)
+{
+	if(args != 3)
+	{
+		ReplyToCommand(client, "Usage: sm_vipm_time <set|add|sub> <\"name\"> <minutes>");
+		return Plugin_Handled;
+	}
+
+	char mode[8];
+	GetCmdArg(1, mode, sizeof(mode));
+
+	if(!StrEqual(mode, "set", false) && !StrEqual(mode, "add", false) && !StrEqual(mode, "sub", false))
+	{
+		ReplyToCommand(client, "Unknown mode '%s'! Please use 'set', 'add' or 'sub'.", mode);
+		return Plugin_Handled;
+	}
+
+	char searchName[64];
+	GetCmdArg(2, searchName, sizeof(searchName));
+
+	char minutesString[8];
+	GetCmdArg(3, minutesString, sizeof(minutesString));
+
+	int minutes = StringToInt(minutesString);
+	if(minutes < 0)
+		minutes *= -1;
+
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
+	pack.WriteString(searchName);
+	pack.WriteString(mode);
+	pack.WriteCell(minutes);
+
+	char query[128];
+	Format(query, sizeof(query), "SELECT * FROM vips WHERE name LIKE '%%%s%%';", searchName);
+
+	connection.Query(CallbackPreChangeTime, query, pack);
+	return Plugin_Handled;
 }
 
 public void CallbackPreChangeTime(Database db, DBResultSet result, char[] error, any data)
@@ -457,47 +458,19 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 	ReplyClient(client, "Changed time for VIP '%s' from %i to %i minutes!", name, duration, newDuration);
 }
 
-public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
+public Action CmdCheckVIPs(int client, int args)
 {
-	int client = data;
+	DataPack pack = new DataPack();
+	pack.WriteCell(client);
 
-	if(result == null)
-	{
-		LogError("Error while fetching VIP! Error: %s", error);
-		return;
-	}
+	char query[128];
+	if(DriverIsSQLite())
+		Format(query, sizeof(query), "SELECT * FROM vips WHERE (strftime('%%s', joindate, duration || ' minutes') - strftime('%%s', 'now')) < 0 AND duration >= 0;");
+	else
+		Format(query, sizeof(query), "SELECT * FROM vips WHERE TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;");
 
-	if(result.AffectedRows != 1)
-		return;
-
-	AddVipToAdminCache(client);
-	NotifyPostAdminCheck(client);
-}
-
-public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any data)
-{
-	if(result == null)
-	{
-		LogError("Error while checking VIP! Error: %s", error);
-		return;
-	}
-
-	if(result.AffectedRows != 1)
-		return;
-
-	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
-
-	char steamId[64];
-	pack.ReadString(steamId, sizeof(steamId));
-
-	char name[64];
-	pack.ReadString(name, sizeof(name));
-
-	char reason[256];
-	strcopy(reason, sizeof(reason), "Time expired!");
-
-	RemoveVip(0, steamId, name, reason);
+	connection.Query(CallbackCheckVIPs, query, pack);
+	return Plugin_Handled;
 }
 
 public void CallbackCheckVIPs(Database db, DBResultSet result, char[] error, any data)
@@ -544,6 +517,15 @@ void ConnectToDatabase()
 		Database.Connect(CallbackConnect, "default");
 }
 
+public void CallbackConnect(Database db, char[] error, any data)
+{
+	if(db == null)
+		LogError("Can't connect to server. Error: %s", error);
+
+	connection = db;
+	CreateTableIfExists();
+}
+
 void CreateTableIfExists()
 {
 	if(connection == null)
@@ -552,27 +534,23 @@ void CreateTableIfExists()
 	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP, duration INT(11) NOT NULL);");
 }
 
-void FetchVIP(int client)
+public void CallbackCreateTable(Database db, DBResultSet result, char[] error, any data)
 {
-	char steamId[64];
-	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
-
-	int len = strlen(steamId) * 2 + 1;
-	char[] escapedSteamId = new char[len];
-	connection.Escape(steamId, escapedSteamId, len);
-
-	char query[128];
-	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
-	connection.Query(CallbackFetchVIP, query, client, DBPrio_High);
+	if(result == null)
+		LogError("Error while creating table! Error: %s", error);
 }
 
-void FetchAvailableVIPs()
+public Action OnClientPreAdminCheck(int client)
 {
-	for(int i = 1; i < MaxClients; i++)
-	{
-		if(IsClientConnected(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
-			FetchVIP(i);
-	}
+	if(connection == null)
+		return Plugin_Continue;
+
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
+		return Plugin_Continue;
+
+	CheckVIP(client);
+	FetchVIP(client);
+	return Plugin_Handled;
 }
 
 void CheckVIP(int client)
@@ -603,71 +581,76 @@ void CheckVIP(int client)
 	connection.Query(CallbackCheckVIP, query, pack, DBPrio_High);
 }
 
-void RemoveVip(int client, char[] steamId, char[] name, char[] reason)
+public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any data)
 {
-	DataPack pack = new DataPack();
-	pack.WriteCell(client);
-	pack.WriteString(steamId);
-	pack.WriteString(name);
-	pack.WriteString(reason);
+	if(result == null)
+	{
+		LogError("Error while checking VIP! Error: %s", error);
+		return;
+	}
+
+	if(result.AffectedRows != 1)
+		return;
+
+	DataPack pack = view_as<DataPack>(data);
+	pack.Reset();
+
+	char steamId[64];
+	pack.ReadString(steamId, sizeof(steamId));
+
+	char name[64];
+	pack.ReadString(name, sizeof(name));
+
+	char reason[256];
+	strcopy(reason, sizeof(reason), "Time expired!");
+
+	RemoveVip(0, steamId, name, reason);
+}
+
+void FetchVIP(int client)
+{
+	char steamId[64];
+	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
 	connection.Escape(steamId, escapedSteamId, len);
 
 	char query[128];
-	Format(query, sizeof(query), "DELETE FROM vips WHERE steamId = '%s';", escapedSteamId);
-	connection.Query(CallbackRemoveVIP, query, pack);
+	Format(query, sizeof(query), "SELECT duration FROM vips WHERE steamId = '%s';", escapedSteamId);
+	connection.Query(CallbackFetchVIP, query, client, DBPrio_High);
 }
 
-bool AddVipToAdminCache(int client)
+public void CallbackFetchVIP(Database db, DBResultSet result, char[] error, any data)
 {
-	char steamId[64];
-	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
+	int client = data;
 
-	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
-	if(admin != INVALID_ADMIN_ID)
-		RemoveAdmin(admin);
-
-	GroupId group = FindAdmGroup("VIP");
-	if(group == INVALID_GROUP_ID)
+	if(result == null)
 	{
-		PrintToServer("[VIP-Manager] Couldn't found group 'VIP'! Please create a group called 'VIP'.");
-		return false;
+		LogError("Error while fetching VIP! Error: %s", error);
+		return;
 	}
 
-	admin = CreateAdmin();
-	BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId);
-
-	AdminInheritGroup(admin, group);
-	RunAdminCacheChecks(client);
-	return true;
-}
-
-void RemoveVipFromAdminCache(char[] steamId)
-{
-	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
-	if(admin == INVALID_ADMIN_ID)
+	if(result.AffectedRows != 1)
 		return;
 
-	RemoveAdmin(admin);
+	AddVipToAdminCache(client);
+	NotifyPostAdminCheck(client);
 }
 
-int FindPlayer(char[] searchTerm)
+public int OnRebuildAdminCache(AdminCachePart part)
+{
+	if(part == AdminCache_Admins)
+		FetchAvailableVIPs();
+}
+
+void FetchAvailableVIPs()
 {
 	for(int i = 1; i < MaxClients; i++)
 	{
-		if(!IsClientConnected(i))
-			continue;
-
-		char playerName[64];
-		GetClientName(i, playerName, sizeof(playerName));
-
-		if(StrContains(playerName, searchTerm, false) > -1)
-			return i;
+		if(IsClientConnected(i) && GetUserAdmin(i) == INVALID_ADMIN_ID)
+			FetchVIP(i);
 	}
-
-	return -1;
 }
 
 void ReplyClient(int client, const char[] format, any ...)
@@ -689,4 +672,21 @@ bool DriverIsSQLite()
 	driver.GetIdentifier(identifier, sizeof(identifier));
 
 	return StrEqual(identifier, "sqlite");
+}
+
+int FindPlayer(char[] searchTerm)
+{
+	for(int i = 1; i < MaxClients; i++)
+	{
+		if(!IsClientConnected(i))
+			continue;
+
+		char playerName[64];
+		GetClientName(i, playerName, sizeof(playerName));
+
+		if(StrContains(playerName, searchTerm, false) > -1)
+			return i;
+	}
+
+	return -1;
 }
