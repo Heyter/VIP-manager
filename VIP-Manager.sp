@@ -388,7 +388,7 @@ public void AddVIPDuration(int caller, const char[] name, const char[] steamId, 
 
 public void SubVIPDuration(int caller, const char[] name, const char[] steamId, int duration, any durationToSub)
 {
-	int newDuration = duration + durationToSub;
+	int newDuration = duration - durationToSub;
 	ChangeVIPDuration(caller, name, steamId, "sub", duration, newDuration);
 }
 
