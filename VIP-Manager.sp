@@ -485,8 +485,7 @@ public void CallbackConnect(Database db, char[] error, any data)
 
 void CreateTableIfNotExists()
 {
-	if(connection == null)
-		connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP, duration INT(11) NOT NULL);");
+	connection.Query(CallbackCreateTable, "CREATE TABLE IF NOT EXISTS vips (steamId VARCHAR(64) PRIMARY KEY, name VARCHAR(64) NOT NULL, joindate TIMESTAMP DEFAULT CURRENT_TIMESTAMP, duration INT(11) NOT NULL);");
 }
 
 public void CallbackCreateTable(Database db, DBResultSet result, char[] error, any data)
