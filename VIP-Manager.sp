@@ -6,6 +6,8 @@ typedef VIPSelectedCallback = function void(int caller, const char[] name, const
 typedef VIPCheckedCallback = function void(int vipClient, bool expired);
 
 Database connection;
+ConVar authTypeConVar;
+AuthIdType authType = AuthId_Engine;
 
 Handle onAddVIPForward;
 Handle onRemoveVIPForward;
@@ -29,6 +31,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 public void OnPluginStart()
 {
 	CreateConVar("sm_vipm_version", Version, "Version of VIP-Manager", FCVAR_PLUGIN | FCVAR_SPONLY);
+	authTypeConVar = CreateConVar("sm_vipm_authid_format", "engine", "Sets which SteamId format should be used.\nEngine (default) | Steam2 | Steam3 | Steam64", FCVAR_PLUGIN);
 
 	RegAdminCmd("sm_vipm", Cmd_PrintHelp, ADMFLAG_ROOT, "Lists all commands.");
 	RegAdminCmd("sm_vipm_add", Cmd_AddVIP, ADMFLAG_ROOT, "Add a VIP.");
@@ -41,6 +44,26 @@ public void OnPluginStart()
 	onDurationChangedForward = CreateGlobalForward("OnVIPDurationChanged", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String, Param_Cell, Param_Cell);
 
 	ConnectToDatabase();
+}
+
+public void OnConfigsExecuted()
+{
+	ParseAuthIdFormat();
+}
+
+void ParseAuthIdFormat()
+{
+	char type[16];
+	authTypeConVar.GetString(type, sizeof(type));
+
+	if(StrEqual(type, "steam2", false))
+		authType = AuthId_Steam2;
+	else if(StrEqual(type, "steam3", false))
+		authType = AuthId_Steam3;
+	else if(StrEqual(type, "steam64", false))
+		authType = AuthId_SteamID64;
+	else
+		authType = AuthId_Engine;
 }
 
 public Action Cmd_PrintHelp(int client, int args)
@@ -155,7 +178,7 @@ bool AddVIPToAdminCache(int client)
 		return false;
 
 	char steamId[64];
-	GetClientAuthId(client, AuthId_Engine, steamId, sizeof(steamId));
+	GetClientAuthId(client, authType, steamId, sizeof(steamId));
 
 	GroupId group = FindAdmGroup("VIP");
 	if(group == INVALID_GROUP_ID) {
@@ -508,7 +531,7 @@ void CheckVIP(int vipClient, VIPCheckedCallback callback)
 		return;
 
 	char steamId[64];
-	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
+	GetClientAuthId(vipClient, authType, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
@@ -560,7 +583,7 @@ void FetchVIP(int vipClient)
 		return;
 
 	char steamId[64];
-	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
+	GetClientAuthId(vipClient, authType, steamId, sizeof(steamId));
 
 	int len = strlen(steamId) * 2 + 1;
 	char[] escapedSteamId = new char[len];
@@ -592,7 +615,7 @@ void RemoveVIPByExpiration(int vipClient)
 	GetClientName(vipClient, name, sizeof(name));
 
 	char steamId[64];
-	GetClientAuthId(vipClient, AuthId_Engine, steamId, sizeof(steamId));
+	GetClientAuthId(vipClient, authType, steamId, sizeof(steamId));
 
 	RemoveVIP(0, name, steamId, "Time expired");
 }
@@ -637,7 +660,7 @@ bool SearchClient(const char[] search, char[] name, nameLength, char[] steamId, 
 		return false;
 
 	GetClientName(client, name, nameLength);
-	GetClientAuthId(client, AuthId_Engine, steamId, steamIdLength);
+	GetClientAuthId(client, authType, steamId, steamIdLength);
 	return true;
 }
 
