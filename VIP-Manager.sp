@@ -1,6 +1,6 @@
 #include <sourcemod>
 
-#define Version "2.1"
+#define Version "2.2"
 
 typedef VIPSelectedCallback = function void(int caller, const char[] name, const char[] steamId, int duration, any additionalData);
 typedef VIPCheckedCallback = function void(int vipClient, bool expired);
