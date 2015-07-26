@@ -454,13 +454,13 @@ public void CallbackCheckForExpiredVIPs(Database db, DBResultSet result, char[] 
 	}
 
 	while(result.FetchRow()) {
-		char steamId[64];
-		result.FetchString(0, steamId, sizeof(steamId));
-
 		char name[MAX_NAME_LENGTH];
 		result.FetchString(1, name, sizeof(name));
 
-		RemoveVIP(caller, steamId, name, "Time expired!");
+		char steamId[64];
+		result.FetchString(0, steamId, sizeof(steamId));
+
+		RemoveVIP(caller, name, steamId, "Time expired!");
 	}
 
 	ReplyClient(caller, "Removed all expired VIPs!");
