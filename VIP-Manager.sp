@@ -558,10 +558,8 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 
 public void OnClientPostAdminFilter(int client)
 {
-	if(connection == null)
-		return;
-
-	CheckVIP(client, VIPCheckedSuccessfully);
+	if(connection != null)
+		CheckVIP(client, VIPCheckedSuccessfully);
 }
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
