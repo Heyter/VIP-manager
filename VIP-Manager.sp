@@ -664,13 +664,13 @@ void RemoveVIPByExpiration(int vipClient)
 public int OnRebuildAdminCache(AdminCachePart part)
 {
 	if(part == AdminCache_Admins)
-		FetchAvailableVIPs();
+		CheckAvailableVIPs();
 }
 
-void FetchAvailableVIPs()
+void CheckAvailableVIPs()
 {
 	for(int i = 1; i < MaxClients; i++)
-		FetchVIP(i);
+		CheckVIP(i, VIPCheckedSuccessfully);
 }
 
 void ReplyClient(int client, const char[] format, any ...)
