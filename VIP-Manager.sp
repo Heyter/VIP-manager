@@ -522,7 +522,7 @@ public void OnClientPostAdminFilter(int client)
 	if(connection == null)
 		return;
 
-	CheckVIP(client, VIPChecked);
+	CheckVIP(client, VIPCheckedSuccessfully);
 }
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
@@ -539,9 +539,9 @@ void CheckVIP(int vipClient, VIPCheckedCallback callback)
 
 	char query[196];
 	if(DriverIsSQLite())
-		Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND (strftime('%%s', joindate, duration || ' minutes') - strftime('%%s', 'now')) < 0 AND duration >= 0;", escapedSteamId);
+		Format(query, sizeof(query), "SELECT (strftime('%%s', joindate, duration || ' minutes') - strftime('%%s', 'now')) < 0 AS expired FROM vips WHERE steamId = '%s' AND duration >= 0;", escapedSteamId);
 	else
-		Format(query, sizeof(query), "SELECT joindate, duration FROM vips WHERE steamId = '%s' AND TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AND duration >= 0;", escapedSteamId);
+		Format(query, sizeof(query), "SELECT TIMEDIFF(DATE_ADD(joindate, INTERVAL duration MINUTE), NOW()) < 0 AS expired FROM vips WHERE steamId = '%s' AND duration >= 0;", escapedSteamId);
 
 	DataPack pack = new DataPack();
 	pack.WriteCell(vipClient);
@@ -556,12 +556,14 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 		LogError("Error while checking VIP! Error: %s", error);
 		return;
 	}
+	else if(result.RowCount <= 0)
+		return;
 
 	DataPack pack = view_as<DataPack>(data);
 	pack.Reset();
 	int vipClient = pack.ReadCell();
 
-	bool expired = result.RowCount == 0;
+	bool expired = view_as<bool>(result.FetchInt(0));
 
 	Call_StartFunction(null, pack.ReadFunction());
 	Call_PushCell(vipClient);
@@ -569,12 +571,12 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	Call_Finish();
 }
 
-public void VIPChecked(int vipClient, bool expired)
+public void VIPCheckedSuccessfully(int vipClient, bool expired)
 {
 	if(expired)
-		FetchVIP(vipClient);
-	else
 		RemoveVIPByExpiration(vipClient);
+	else
+		FetchVIP(vipClient);
 }
 
 void FetchVIP(int vipClient)
