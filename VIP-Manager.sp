@@ -178,8 +178,10 @@ public void AddVIPCallback(Database db, DBResultSet result, char[] error, any da
 
 bool AddVIPToAdminCache(int client)
 {
-	if(client < 1 || !IsClientConnected(client) || ClientIsAdmin(client))
+	if(client < 1 || !IsClientConnected(client) || ClientIsAdmin(client)) {
+		NotifyPostAdminCheck(client);
 		return false;
+	}
 
 	char steamId[64];
 	GetClientAuthId(client, authType, steamId, sizeof(steamId));
@@ -187,6 +189,8 @@ bool AddVIPToAdminCache(int client)
 	GroupId group = FindAdmGroup("VIP");
 	if(group == INVALID_GROUP_ID) {
 		PrintToServer("[VIP-Manager] Couldn't found group 'VIP'! Please create a group called 'VIP'.");
+
+		NotifyPostAdminCheck(client);
 		return false;
 	}
 
@@ -194,10 +198,13 @@ bool AddVIPToAdminCache(int client)
 	AdminInheritGroup(admin, group);
 	if(!BindAdminIdentity(admin, AUTHMETHOD_STEAM, steamId)) {
 		RemoveAdmin(admin);
+
+		NotifyPostAdminCheck(client);
 		return false;
 	}
 
 	RunAdminCacheChecks(client);
+	NotifyPostAdminCheck(client);
 	return true;
 }
 
@@ -556,10 +563,13 @@ public void CallbackCreateTable(Database db, DBResultSet result, char[] error, a
 		LogError("Error while creating table! Error: %s", error);
 }
 
-public void OnClientPostAdminFilter(int client)
+public Action OnClientPreAdminCheck(int client)
 {
-	if(connection != null)
-		CheckVIP(client, VIPCheckedSuccessfully);
+	if(connection == null)
+		return Plugin_Continue;
+
+	CheckVIP(client, VIPCheckedSuccessfully);
+	return Plugin_Handled;
 }
 
 void CheckVIP(int vipClient, VIPCheckedCallback callback)
