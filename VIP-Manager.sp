@@ -600,6 +600,7 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	DataPack pack = view_as<DataPack>(data);
 	int vipClient = pack.ReadCell();
 
+	result.FetchRow();
 	bool expired = view_as<bool>(result.FetchInt(0));
 
 	Call_StartFunction(null, pack.ReadFunction());
