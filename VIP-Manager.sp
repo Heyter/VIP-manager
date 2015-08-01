@@ -339,8 +339,25 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 void RemoveVIPFromAdminCache(char[] steamId)
 {
 	AdminId admin = FindAdminByIdentity(AUTHMETHOD_STEAM, steamId);
-	if(admin != INVALID_ADMIN_ID)
+	if(AdminInheritFromGroupVIP(admin))
 		RemoveAdmin(admin);
+}
+
+bool AdminInheritFromGroupVIP(AdminId admin)
+{
+	if(admin == INVALID_ADMIN_ID)
+		return false;
+
+	int groupCount = GetAdminGroupCount(admin);
+	for(int groupNumber = 0; groupNumber < groupCount; groupNumber++) {
+		char groupName[8];
+		GetAdminGroup(admin, groupNumber, groupName, sizeof(groupName));
+
+		if(StrEqual(groupName, "VIP", false))
+			return true;
+	}
+
+	return false;
 }
 
 public Action Cmd_ChangeVIPDuration(int client, int args)
