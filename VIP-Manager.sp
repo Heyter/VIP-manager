@@ -132,6 +132,7 @@ void AddVIP(int caller, const char[] name, const char[] steamId, int duration)
 	pack.WriteString(name);
 	pack.WriteString(steamId);
 	pack.WriteCell(duration);
+	pack.Reset();
 
 	char query[512];
 	Format(query, sizeof(query), "INSERT INTO vips (steamId, name, duration) VALUES ('%s', '%s', %i);", escapedSteamId, escapedName, duration);
@@ -141,12 +142,13 @@ void AddVIP(int caller, const char[] name, const char[] steamId, int duration)
 public void AddVIPCallback(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int caller = pack.ReadCell();
 
 	if(result == null) {
 		LogError("Error while adding VIP! Error: %s", error);
 		ReplyClient(caller, "Can't add VIP! %s", error);
+
+		delete pack;
 		return;
 	}
 
@@ -157,6 +159,8 @@ public void AddVIPCallback(Database db, DBResultSet result, char[] error, any da
 	pack.ReadString(steamId, sizeof(steamId));
 
 	int duration = pack.ReadCell();
+
+	delete pack;
 
 	int vipClient = FindPlayer(name);
 	if(AddVIPToAdminCache(vipClient))
@@ -227,6 +231,7 @@ void SearchVIPByName(int caller, const char[] searchTerm, VIPSelectedCallback ca
 	pack.WriteString(searchTerm);
 	pack.WriteFunction(callback);
 	pack.WriteCell(additionalData);
+	pack.Reset();
 
 	connection.Query(VIPSearchingResult, query, pack);
 }
@@ -234,12 +239,13 @@ void SearchVIPByName(int caller, const char[] searchTerm, VIPSelectedCallback ca
 public void VIPSearchingResult(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int caller = pack.ReadCell();
 
 	if(result == null) {
 		LogError("Error while selecting VIP! Error: %s", error);
 		ReplyClient(caller, "Can't select VIP! %s", error);
+
+		delete pack;
 		return;
 	}
 
@@ -248,10 +254,14 @@ public void VIPSearchingResult(Database db, DBResultSet result, char[] error, an
 
 	if(result.RowCount == 0) {
 		ReplyClient(caller, "Can't find a VIP with the name '%s'!", searchTerm);
+
+		delete pack;
 		return;
 	}
 	else if(result.RowCount > 1) {
 		ReplyClient(caller, "Found more than one VIP with the name '%s'! Please specify the name more accurately!", searchTerm);
+
+		delete pack;
 		return;
 	}
 
@@ -272,6 +282,8 @@ public void VIPSearchingResult(Database db, DBResultSet result, char[] error, an
 	Call_PushCell(duration);
 	Call_PushCell(pack.ReadCell());
 	Call_Finish();
+
+	delete pack;
 }
 
 public void RemoveVIPByCommand(int caller, const char[] name, const char[] steamId, int duration, any nothing)
@@ -299,6 +311,7 @@ void RemoveVIP(int caller, const char[] name, const char[] steamId, const char[]
 	pack.WriteString(name);
 	pack.WriteString(steamId);
 	pack.WriteString(reason);
+	pack.Reset();
 
 	connection.Query(CallbackRemoveVIP, query, pack);
 }
@@ -306,12 +319,13 @@ void RemoveVIP(int caller, const char[] name, const char[] steamId, const char[]
 public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int caller = pack.ReadCell();
 
 	if(result == null) {
 		LogError("Error while removing VIP! Error: %s", error);
 		ReplyClient(caller, "Can't remove VIP! %s", error);
+
+		delete pack;
 		return;
 	}
 
@@ -323,6 +337,8 @@ public void CallbackRemoveVIP(Database db, DBResultSet result, char[] error, any
 
 	char reason[256];
 	pack.ReadString(reason, sizeof(reason));
+
+	delete pack;
 
 	RemoveVIPFromAdminCache(steamId);
 
@@ -421,6 +437,7 @@ void ChangeVIPDuration(int caller, const char[] name, const char[] steamId, cons
 	pack.WriteString(mode);
 	pack.WriteCell(oldDuration);
 	pack.WriteCell(newDuration);
+	pack.Reset();
 
 	connection.Query(CallbackChangeTime, query, pack);
 }
@@ -428,12 +445,13 @@ void ChangeVIPDuration(int caller, const char[] name, const char[] steamId, cons
 public void CallbackChangeTime(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int caller = pack.ReadCell();
 
 	if(result == null) {
 		LogError("Error while manipulate VIP time! Error: %s", error);
 		ReplyClient(caller, "Can't change time for VIP! %s", error);
+
+		delete pack;
 		return;
 	}
 
@@ -448,6 +466,8 @@ public void CallbackChangeTime(Database db, DBResultSet result, char[] error, an
 
 	int oldDuration = pack.ReadCell();
 	int newDuration = pack.ReadCell();
+
+	delete pack;
 
 	Call_StartForward(onDurationChangedForward);
 	Call_PushCell(caller);
@@ -465,6 +485,7 @@ public Action Cmd_CheckForExpiredVIPs(int client, int args)
 {
 	DataPack pack = new DataPack();
 	pack.WriteCell(client);
+	pack.Reset();
 
 	char query[128];
 	if(DriverIsSQLite())
@@ -479,8 +500,9 @@ public Action Cmd_CheckForExpiredVIPs(int client, int args)
 public void CallbackCheckForExpiredVIPs(Database db, DBResultSet result, char[] error, any data)
 {
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int caller = pack.ReadCell();
+
+	delete pack;
 
 	if(result == null) {
 		LogError("Error while checking VIPs! Error: %s", error);
@@ -563,6 +585,7 @@ void CheckVIP(int vipClient, VIPCheckedCallback callback)
 	DataPack pack = new DataPack();
 	pack.WriteCell(vipClient);
 	pack.WriteFunction(callback);
+	pack.Reset();
 
 	connection.Query(CallbackCheckVIP, query, pack, DBPrio_High);
 }
@@ -577,7 +600,6 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 		return;
 
 	DataPack pack = view_as<DataPack>(data);
-	pack.Reset();
 	int vipClient = pack.ReadCell();
 
 	bool expired = view_as<bool>(result.FetchInt(0));
@@ -586,6 +608,8 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 	Call_PushCell(vipClient);
 	Call_PushCell(expired);
 	Call_Finish();
+
+	delete pack;
 }
 
 public void VIPCheckedSuccessfully(int vipClient, bool expired)
