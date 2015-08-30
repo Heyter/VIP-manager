@@ -25,6 +25,14 @@ public SharedPlugin __pl_vipmanager = {
 forward void OnVIPAdded(int admin, char[] name, char[] steamId, int minutes);
 
 /**
+  * Called everytime a VIP is loaded into the admin cache.
+  *
+  * @param client         Client from the VIP.
+  *
+  */
+forward void OnVIPLoaded(int client);
+
+/**
   * Called everytime a VIP is removed.
   *
   * @param admin          Index of admin, who has removed the VIP.
