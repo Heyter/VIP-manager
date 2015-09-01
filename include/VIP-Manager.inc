@@ -89,7 +89,7 @@ native void AddVIP(const char[] name, const char[] steamId, int minutes, int adm
 
 #if !defined REQUIRE_PLUGIN
 public __pl_vipmanager_SetNTVOptional() {
-  MarkNativeAsOptional("CCC_GetColor");
-  MarkNativeAsOptional("CCC_ResetTag");
+  MarkNativeAsOptional("ClientIsVIP");
+  MarkNativeAsOptional("AddVIP");
 }
 #endif
