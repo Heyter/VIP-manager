@@ -55,3 +55,15 @@ forward void OnVIPRemoved(int admin, char[] name, char[] steamId, char[] reason)
   *
   */
 forward void OnVIPDurationChanged(int admin, char[] name, char[] steamId, char[] mode, int oldDuration, int duration);
+
+
+/**
+  * Check if a client is a VIP.
+  *
+  * @param client         Index of client to check
+  * @return               Result of check
+  *
+  * On error:             Invalid client index
+  *
+  */
+native bool ClientIsVIP(int client);

@@ -24,6 +24,8 @@ public Plugin myinfo = {
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 {
+	CreateNative("ClientIsVIP", Native_ClientIsVIP);
+
 	RegPluginLibrary("VIP-Manager");
 
 	return APLRes_Success;
@@ -689,6 +691,18 @@ void CheckAvailableVIPs()
 {
 	for(int i = 1; i < MaxClients; i++)
 		CheckVIP(i, VIPCheckedSuccessfully);
+}
+
+public int Native_ClientIsVIP(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	if(client < 1 || !IsClientConnected(client)) {
+		ThrowNativeError(SP_ERROR_PARAM, "Client index is invalid");
+		return false;
+	}
+
+	AdminId admin = GetUserAdmin(client);
+	return AdminInheritFromGroupVIP(admin);
 }
 
 void ReplyClient(int client, const char[] format, any ...)
