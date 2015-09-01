@@ -25,6 +25,7 @@ public Plugin myinfo = {
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 {
 	CreateNative("ClientIsVIP", Native_ClientIsVIP);
+	CreateNative("AddVIP", Native_AddVIP);
 
 	RegPluginLibrary("VIP-Manager");
 
@@ -703,6 +704,20 @@ public int Native_ClientIsVIP(Handle plugin, int numParams)
 
 	AdminId admin = GetUserAdmin(client);
 	return AdminInheritFromGroupVIP(admin);
+}
+
+public int Native_AddVIP(Handle plugin, int numParams)
+{
+	char name[MAX_NAME_LENGTH];
+	GetNativeString(1, name, sizeof(name));
+
+	char steamId[64];
+	GetNativeString(2, steamId, sizeof(steamId));
+
+	int duration = GetNativeCell(3);
+	int admin = GetNativeCell(4);
+
+	AddVIP(admin, name, steamId, duration);
 }
 
 void ReplyClient(int client, const char[] format, any ...)

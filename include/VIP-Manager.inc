@@ -56,7 +56,6 @@ forward void OnVIPRemoved(int admin, char[] name, char[] steamId, char[] reason)
   */
 forward void OnVIPDurationChanged(int admin, char[] name, char[] steamId, char[] mode, int oldDuration, int duration);
 
-
 /**
   * Check if a client is a VIP.
   *
@@ -67,3 +66,21 @@ forward void OnVIPDurationChanged(int admin, char[] name, char[] steamId, char[]
   *
   */
 native bool ClientIsVIP(int client);
+
+/**
+  * Add a new VIP.
+  *
+  * @param name           Name of the VIP
+  * @param steamId        SteamId of the VIP
+  * @param minutes        Duration in minutes the user becomes a VIP
+  * @param admin          Index of admin, who added the VIP
+  *
+  */
+native void AddVIP(const char[] name, const char[] steamId, int minutes, int admin = 0);
+
+#if !defined REQUIRE_PLUGIN
+public __pl_vipmanager_SetNTVOptional() {
+  MarkNativeAsOptional("CCC_GetColor");
+  MarkNativeAsOptional("CCC_ResetTag");
+}
+#endif
