@@ -25,6 +25,15 @@ public SharedPlugin __pl_vipmanager = {
 forward void OnVIPAdded(int admin, char[] name, char[] steamId, int minutes);
 
 /**
+  * Called everytime a VIP has been checked.
+  *
+  * @param client         Client from the VIP.
+  * @param expired        Result of the check if a VIP is expired.
+  *
+  */
+forward void OnVIPChecked(int client, bool expired);
+
+/**
   * Called everytime a VIP is loaded into the admin cache.
   *
   * @param client         Client from the VIP.

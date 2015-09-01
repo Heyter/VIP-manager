@@ -10,6 +10,7 @@ ConVar authTypeConVar;
 AuthIdType authType = AuthId_Engine;
 
 Handle onAddVIPForward;
+Handle onVIPCheckedForward;
 Handle onVIPLoadedForward;
 Handle onRemoveVIPForward;
 Handle onDurationChangedForward;
@@ -44,6 +45,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_vipm_check", Cmd_CheckForExpiredVIPs, ADMFLAG_ROOT, "Check for expired VIPs.");
 
 	onAddVIPForward = CreateGlobalForward("OnVIPAdded", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell);
+	onVIPCheckedForward = CreateGlobalForward("OnVIPChecked", ET_Ignore, Param_Cell, Param_Cell);
 	onVIPLoadedForward = CreateGlobalForward("OnVIPLoaded", ET_Ignore, Param_Cell);
 	onRemoveVIPForward = CreateGlobalForward("OnVIPRemoved", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String);
 	onDurationChangedForward = CreateGlobalForward("OnVIPDurationChanged", ET_Ignore, Param_Cell, Param_String, Param_String, Param_String, Param_Cell, Param_Cell);
@@ -633,6 +635,11 @@ public void CallbackCheckVIP(Database db, DBResultSet result, char[] error, any 
 
 public void VIPCheckedSuccessfully(int vipClient, bool expired)
 {
+	Call_StartForward(onVIPCheckedForward);
+	Call_PushCell(vipClient);
+	Call_PushCell(expired);
+	Call_Finish();
+
 	if(expired)
 		RemoveVIPByExpiration(vipClient);
 	else
