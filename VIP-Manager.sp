@@ -20,7 +20,7 @@ public Plugin myinfo = {
 	author = "Shadow_Man",
 	description = "Manage VIPs on your server",
 	version = Version,
-	url = "http://cf-server.pfweb.eu"
+	url = "http://tf2-casual-fun.de/"
 };
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
