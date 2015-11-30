@@ -17,7 +17,7 @@ Handle onDurationChangedForward;
 
 public Plugin myinfo = {
 	name = "VIP-Manager",
-	author = "Shadow_Man",
+	author = "The casual trade and fun server",
 	description = "Manage VIPs on your server",
 	version = Version,
 	url = "http://tf2-casual-fun.de/"
